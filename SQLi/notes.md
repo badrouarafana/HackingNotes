@@ -147,3 +147,23 @@ also, it exist ways to obfuscate the payload to evade WAFs:
 		<productId>123</productId>
 		<storeId>999 &#x53;ELECT * FROM information_schema.tables</storeId>
 	</stockCheck>
+
+Using entities, can help us bypass the WAF.
+
+## Second order sqli
+
+it happens when attackers know Sql vuln, and use it to update table for example or adding a new user with admin privileges.
+
+# Prevent from sqli
+You can prevent most instances of SQL injection using parameterized queries instead of string concatenation within the query. These parameterized queries are also know as "prepared statements".
+
+The following code is vulnerable to SQL injection because the user input is concatenated directly into the query:
+
+	String query = "SELECT * FROM products WHERE category = '"+ input + "'";
+	Statement statement = connection.createStatement();
+	ResultSet resultSet = statement.executeQuery(query);
+You can rewrite this code in a way that prevents the user input from interfering with the query structure:
+
+	PreparedStatement statement = connection.prepareStatement("SELECT * FROM products WHERE category = ?");
+	statement.setString(1, input);
+	ResultSet resultSet = statement.executeQuery();
