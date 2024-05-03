@@ -39,3 +39,29 @@ Use generic error messages to avoid giving away information that may be useful f
 Use protective measures on all versions of your API, not just the current production version.
 
 To prevent mass assignment vulnerabilities, allowlist the properties that can be updated by the user, and blocklist sensitive properties that shouldn't be updated by the user.
+
+# Pollution in the query string
+CTF chall
+
+1. get the reset_toekn from the API `username=administrator%26field=reset_token`
+2. use it to change admin password 
+# Parameter pollution
+Consider a similar example, but where the client-side user input is in JSON data. When you edit your name, your browser makes the following request:
+
+    POST /myaccount
+    {"name": "peter"}
+This results in the following server-side request:
+
+    PATCH /users/7312/update
+    {"name":"peter"}
+You can attempt to add the access_level parameter to the request as follows:
+
+    POST /myaccount
+    {"name": "peter\",\"access_level\":\"administrator"}
+If the user input is decoded, then added to the server-side JSON data without adequate encoding, this results in the following server-side request:
+
+    PATCH /users/7312/update
+    {"name":"peter","access_level":"administrator"}
+Again, this may result in the user peter being given administrator access.
+
+Structured format injection can also occur in responses. For example, this can occur if user input is stored securely in a database, then embedded into a JSON response from a back-end API without adequate encoding. You can usually detect and exploit structured format injection in responses in the same way you can in requests.
