@@ -137,3 +137,7 @@ then go to generate new RSA key , and copy the jsonfile file found in `/jwks.jso
     {"kty":"RSA","e":"AQAB","use":"sig","kid":"4b87d66e-6cfa-41ab-b677-f4afd2a123dd","alg":"RS256","n":"k84FbNQguvNDChkDeyajY3jG9qWuSPPmpWwr92Q2hz8x9sHWHpWF_XTHlmKV4s7qD0i2Z-7W6Nkv7INnH1GlUiRWnEPTmcqfPJkbLRK9R4gB37OIVJFtouDyzGEdF36XJPy9tv6mM3iORs5KFBuP5py5DDX8GKotgJfKJV9uNE2z47gkIzgf_u-HcGCIABnFEUJ9ipqoL6XRbBaxfqD9q7fIsFNryyZrjInOXbnXSNnk0bOcxnrVtQRZ3DHkQyewBsP0KpnkfEErt_u38PP_Sek0EYdYi_aKNTmiuCRqLVYLRHfx0oJnztMarOaTvubWlM__POCrEJZi9qzGVhYQWQ"}
 
 then export it into pem file ( need to find other methods to do it )
+
+## Deriving public keys from existing tokens
+
+seen the soutlion, it needs a docker file but i didn't understand how it did work :/  and i don't want to install docker and use a VM without understand it so skip it
