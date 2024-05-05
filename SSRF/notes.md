@@ -24,4 +24,16 @@ Some applications block input containing hostnames like 127.0.0.1 and localhost,
 
 Sometime, if it's still not working we might need to use some obfuscation example a =  %2561 // didn't know how nor why it work, need to see some obfuscation modules
 
-## SSRF with whitelist-based input filters
+some times we might add the evil url : example
+
+    <url>&path=http://192.168.0.68/admin
+
+
+## Blind SSRF vulnerabilities
+Blind SSRF vulnerabilities occur if you can cause an application to issue a back-end HTTP request to a supplied URL, but the response from the back-end request is not returned in the application's front-end response.
+
+Blind SSRF is harder to exploit but sometimes leads to full remote code execution on the server or other back-end components.
+
+// for the lab, need to see in in HTB since burp collaborator is not for free :(
+
+    
