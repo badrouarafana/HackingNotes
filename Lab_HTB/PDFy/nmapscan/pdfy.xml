@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.80 scan initiated Sun May  5 18:27:51 2024 as: nmap -sC -sV -p- -oA nmapscan/pdfy 83.136.255.150 -->
+<nmaprun scanner="nmap" args="nmap -sC -sV -p- -oA nmapscan/pdfy 83.136.255.150" start="1714926471" startstr="Sun May  5 18:27:51 2024" version="7.80" xmloutputversion="1.04">
+<scaninfo type="connect" protocol="tcp" numservices="65535" services="1-65535"/>
