@@ -665,3 +665,51 @@ So we smuggle this payload
     search=toto
 
 We sent the content-length to a 1000 to try to get the admin cookie, and don't forget to set out session cookie finally add  `foo: bar\r\nTransfer-Encoding: chunked` and we have just to wait if the admin get poisoned we get his cookie in the search bar.
+
+## HTTP/2 request splitting
+
+Het we are going to do like we did in queue poisoning, where we will send multiple 404 requests and 
+and just by luck i got the admin page, not even doing anything =) just writing the payload =)
+
+so here the payload is just simple, change to post method, and add
+
+    foo bar \r\n\r\n
+    GET /nonexisting HTTP/1.1\r\n
+    HOST : vulnerable host  
+
+and that's is 
+## Bypassing access controls via HTTP/2 request tunnelling
+
+The aim of this lab, is to bypass the http access control, and try to steal SSL code, and delete carlos user, from accessing admin page:
+1. Validate the vulnerability, buy adding CRLF payload in burp.
+
+We add this payload 
+
+in the name 
+
+    foo: bar\r\n
+    Host: test.com
+
+and Value 
+
+    bar
+
+and we should have a response that tells us, we can't connect to test.com, that confirms tha vulnerability
+2. steal ssl data by smuggling http request exploiting the search bar.
+
+![img](img/http2.png)
+This explains, to to exploit the search bar to show data
+
+The image explains the process of concatenating the requests.
+
+So when the front end will add headers, the smuggled request will be added in the POST body 
+
+![img](img/payload.png)
+Here we can see that the front end adds ssl header, we can change them and add them to the smuggled request
+
+![img](img/adminsmuggle2.png)
+
+in this case it's a blind smuggled ! so i cheated because i know the form the header, and did this payload to solve the lab.
+
+
+![img](img/deleteadmin.png)

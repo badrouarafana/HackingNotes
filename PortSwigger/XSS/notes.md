@@ -34,3 +34,13 @@ If the attacker can control the value of the input field, they can easily constr
     You searched for: <img src=1 onerror='/* Bad stuff here... */'>
     
 In a typical case, the input field would be populated from part of the HTTP request, such as a URL query string parameter, allowing the attacker to deliver an attack using a malicious URL, in the same manner as reflected XSS.
+
+## href attribute 
+
+We can execute javascript directly into an hef attribut like this : 
+`javascript:alert(1)`
+
+and the tag will be 
+
+    <a id="backLink" href="javascript:alert()">Back</a>
+
