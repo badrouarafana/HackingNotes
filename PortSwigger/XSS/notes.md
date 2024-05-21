@@ -44,3 +44,8 @@ and the tag will be
 
     <a id="backLink" href="javascript:alert()">Back</a>
 
+Payloads found
+
+* `"onmouseover="alert(1)` in `<input type="text" placeholder="Search the blog..." name="search" value="" onmouseover="alert(1)">`
+
+in href we can add `javascript:alert(1)`
