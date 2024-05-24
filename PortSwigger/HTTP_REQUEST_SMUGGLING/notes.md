@@ -694,6 +694,8 @@ and Value
 
     bar
 
+it's always good to try both, sometimes frontend implementations will strip CRLFs from header values when converting the request to http/1.1 to talk to the backend – essentially fixing this vulnerability – but not from the header name. Then we can still exploit this by injecting CRLFs in the header name.
+
 and we should have a response that tells us, we can't connect to test.com, that confirms tha vulnerability
 2. steal ssl data by smuggling http request exploiting the search bar.
 
@@ -713,3 +715,7 @@ in this case it's a blind smuggled ! so i cheated because i know the form the he
 
 
 ![img](img/deleteadmin.png)
+
+in another approach we should use head header, to get the output. 
+
+Now getting the admin page, we can smuggle /admin, just the initial request before smuggling need to be smaller than the original one, also change the method to HEAD

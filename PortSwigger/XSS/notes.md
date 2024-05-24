@@ -37,10 +37,16 @@ In a typical case, the input field would be populated from part of the HTTP requ
 
 ## href attribute 
 
-We can execute javascript directly into an hef attribut like this : 
+We can execute javascript directly into an hef attribute like this : 
 `javascript:alert(1)`
 
 and the tag will be 
 
     <a id="backLink" href="javascript:alert()">Back</a>
+
+`window.location.hash` return the hash (#) after the url, example it will return #123 
+
+    www.url.com/#123 
+
+we can add `javascript:alert()` in href attribute and it will launch a js script.
 
