@@ -44,9 +44,17 @@ and the tag will be
 
     <a id="backLink" href="javascript:alert()">Back</a>
 
+<<<<<<< HEAD
 `window.location.hash` return the hash (#) after the url, example it will return #123 
 
     www.url.com/#123 
 
 we can add `javascript:alert()` in href attribute and it will launch a js script.
 
+=======
+Payloads found
+
+* `"onmouseover="alert(1)` in `<input type="text" placeholder="Search the blog..." name="search" value="" onmouseover="alert(1)">`
+
+in href we can add `javascript:alert(1)`
+>>>>>>> refs/remotes/origin/master
