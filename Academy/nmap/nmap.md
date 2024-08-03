@@ -38,3 +38,7 @@ example to change the rtt
 ## Firewall and IDS/IPS Evasion
 
 To try bypass the firewall aim for `-sA` the host in likely to respond with a `RST` flag.
+
+Decoy : to change the ip addresses on random : `-D RND:5` 
+
+We can change source sport for example `--source-port X`
