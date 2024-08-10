@@ -31,9 +31,10 @@ gobuster dir :
 
     gobuster dir -u http://10.10.10.121/ -w /usr/share/dirb/wordlists/common.txt
 
-gobuster dns :
+gobuster dns and Vhost :
 
     gobuster dns -d inlanefreight.com -w /usr/share/SecLists/Discovery/DNS/namelist.txt
+    gobuster vhost -u http://inlanefreight.htb:30437 -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt --append-domain
 
 WhatWeb to extract the version of webservers, frameworks ...etc
 
