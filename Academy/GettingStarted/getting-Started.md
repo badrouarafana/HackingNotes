@@ -1,6 +1,6 @@
 ## Getting started Module 
 
-Commong ports : 
+Common ports : 
 
 | Port | Protocol    | Service        |
 |------|-------------|----------------|
