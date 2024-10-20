@@ -66,3 +66,34 @@ In Windows:
 And then to read them, we can use secretdump.py 
 
     python3 /usr/share/doc/python3-impacket/examples/secretsdump.py -sam sam.save -security security.save -system system.save LOCAL
+
+# Credential hunting for windows 
+we can lazagne.exe
+
+# Credential hunting for linux 
+## interesting commands : 
+
+Search for config files
+
+    for l in $(echo ".conf .config .cnf");do echo -e "\nFile extension: " $l; find / -name *$l 2>/dev/null | grep -v "lib\|fonts\|share\|core" ;done
+
+
+    for i in $(find / -name *.cnf 2>/dev/null | grep -v "doc\|lib");do echo -e "\nFile: " $i; grep "user\|password\|pass" $i 2>/dev/null | grep -v "\#";done
+Dbs 
+
+    for l in $(echo ".sql .db .*db .db*");do echo -e "\nDB File extension: " $l; find / -name *$l 2>/dev/null | grep -v "doc\|lib\|headers\|share\|man";done
+
+Notes
+
+    find /home/* -type f -name "*.txt" -o ! -name "*.*"
+
+Scrips 
+
+    for l in $(echo ".py .pyc .pl .go .jar .c .sh");do echo -e "\nFile extension: " $l; find / -name *$l 2>/dev/null | grep -v "doc\|lib\|headers\|share";done
+
+Crons 
+
+    ls -lah /etc/cron.*/
+SSH Keys 
+
+    grep -rnw "PRIVATE KEY" /home/* 2>/dev/null | grep ":1"
