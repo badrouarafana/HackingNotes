@@ -163,3 +163,25 @@ find / -path /proc -prune -o -type f -perm -o+w 2>/dev/null
 ## LXC
 
 LXC  or linux container is an operating system-level virtualization technique that allows multiple Linux systems to run in isolation from each other on a single host by owning their own processes but sharing the host system kernel for them. 
+
+THe first step is to verify if we belong to the lxd group.
+
+with id
+```bash
+container-user@nix02:~$ id
+
+uid=1000(container-user) gid=1000(container-user) groups=1000(container-user),116(lxd)
+```
+Then download a linux template, and import the image.
+
+
+```bash
+lxc image import ubuntu-template.tar.xz --alias ubuntutemp
+container-user@nix02:~$ lxc image list
+
++-------------------------------------+--------------+--------+-----------------------------------------+--------------+-----------------+-----------+-------------------------------+
+|                ALIAS                | FINGERPRINT  | PUBLIC |               DESCRIPTION               | ARCHITECTURE |      TYPE       |   SIZE    |          UPLOAD DATE          |
++-------------------------------------+--------------+--------+-----------------------------------------+--------------+-----------------+-----------+-------------------------------+
+| ubuntu/18.04 (v1.1.2)               | 623c9f0bde47 | no    | Ubuntu bionic amd64 (20221024_11:49)     | x86_64       | CONTAINER       | 106.49MB  | Oct 24, 2022 at 12:00am (UTC) |
++-------------------------------------+--------------+--------+-----------------------------------------+--------------+-----------------+-----------+-------------------------------+
+```
