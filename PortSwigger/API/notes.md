@@ -1,7 +1,7 @@
 # API
 
 ## Discovering 
-When discovering API, take a look into documenation , if it's not available, check well-known endpoints 
+When discovering API, take a look into documentation , if it's not available, check well-known endpoints 
 
     /api
     /swagger/index.html
@@ -15,7 +15,7 @@ if an endpoint is identified try to investigate the base path, for instance :
 
 ## API error
 
-When pentensting api, check error for hints, for example : 
+When pentesting api, check error for hints, for example : 
 
     GET or PATCH API/products/1/price
 the error we get : 

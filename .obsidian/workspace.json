@@ -1,0 +1,176 @@
+{
+  "main": {
+    "id": "e1be4d7da40ae71e",
+    "type": "split",
+    "children": [
+      {
+        "id": "3d91f3834fb6c914",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "6360c67a6ba064b9",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Academy/Windows priv escs/Notes.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Notes"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "7c45c1995076b4d5",
+    "type": "split",
+    "children": [
+      {
+        "id": "ed020340b4850913",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "932f6f396e0c1ae9",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "d381a68a56cef2aa",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "aa156f75dd1cd6dc",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "3211a16d5aca1d7a",
+    "type": "split",
+    "children": [
+      {
+        "id": "753ae3b98400b403",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a4deb3f51cade419",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Academy/Windows priv escs/Notes.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Notes"
+            }
+          },
+          {
+            "id": "1006c4f7e3144ad7",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Academy/Windows priv escs/Notes.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Notes"
+            }
+          },
+          {
+            "id": "ea0213b02ed42023",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "1293453e5f689b26",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Academy/Windows priv escs/Notes.md"
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Notes"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "6360c67a6ba064b9",
+  "lastOpenFiles": [
+    "PortSwigger/JWT/notes.md",
+    "Academy/Windows priv escs/Notes.md",
+    "Academy/server side attacks/notes.md",
+    "Academy/sqli/Sql_Injection_Fundamentals_Module_Cheat_Sheet.pdf",
+    "Academy/Windows priv escs",
+    "PortSwigger/API/notes.md",
+    "Academy/brute force/Login_Brute_Forcing_Module_Cheat_Sheet.pdf",
+    "Academy/ActiveDirectory/notes.md"
+  ]
+}
