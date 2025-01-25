@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Academy/Windows priv escs/Notes.md",
+                "file": "Academy/Attacking network entreprise/Notes.md",
                 "mode": "source",
                 "source": false
               },
@@ -52,7 +52,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "secrets",
+                "query": "smbserv",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -164,13 +164,18 @@
   },
   "active": "6360c67a6ba064b9",
   "lastOpenFiles": [
+    "Academy/Common_Services/Attacking_Common_Services_Module_Cheat_Sheet.pdf",
+    "Academy/Common_Services/notes.md",
+    "Academy/lfi/notes.md",
+    "Academy/Attacking network entreprise/Notes.md",
+    "Academy/Windows priv escs/Notes.md",
+    "Academy/Attacking network entreprise",
     "Academy/Windows priv escs/Windows_Privilege_Escalation_Module_Cheat_Sheet.pdf",
     "Academy/PasswordAttacks/notes.md",
     "Academy/PasswordAttacks/Password_Attacks_Module_Cheat_Sheet.pdf",
+    "Academy/fileTrasfers/notes.md",
     "Academy/ActiveDirectory/notes.md",
     "Academy/info_gathering_web_edition/Information_Gathering_Web_Edition_Module_Cheat_Sheet.pdf",
-    "Academy/fileTrasfers/notes.md",
-    "Academy/Windows priv escs/Notes.md",
     "PortSwigger/JWT/notes.md",
     "Academy/server side attacks/notes.md",
     "Academy/sqli/Sql_Injection_Fundamentals_Module_Cheat_Sheet.pdf",

