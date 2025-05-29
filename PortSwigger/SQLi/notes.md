@@ -167,8 +167,3 @@ You can rewrite this code in a way that prevents the user input from interfering
 	PreparedStatement statement = connection.prepareStatement("SELECT * FROM products WHERE category = ?");
 	statement.setString(1, input);
 	ResultSet resultSet = statement.executeQuery();
-
-
-
-
-	AABBCCDDEEFF00000000000000000009
