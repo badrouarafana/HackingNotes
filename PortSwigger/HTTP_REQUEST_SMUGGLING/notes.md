@@ -37,7 +37,7 @@ G
 
 If the front-end uses `Content-Length` it will forward the declared number of bytes and include the `G`. The back-end, interpreting the body as chunked, reads the `0\r\n\r\n` sequence (end of chunked body) and then sees `G` as the start of the next request (for example the first byte of the next request line). In other words, `G` becomes the first byte of the next request the back-end processes, which allows an attacker to smuggle bytes into a subsequent request.
 
-![alt text](image.png)
+![alt text](./img/image.png)
 
 
 
@@ -65,6 +65,8 @@ Expected result: if the front-end is parsing Transfer-Encoding (chunked), it wil
 
 2) Confirm the back-end uses Content-Length (timing-based)
 
+![alt text](img/image-2.png)
+
 Next, use a request that ends the chunked stream and leaves an extra byte that can be interpreted differently by the back-end:
 
 ```http
@@ -80,6 +82,7 @@ X
 
 Behavior to look for: if the front-end parses Transfer-Encoding, it will forward the chunked stream and any leftover bytes to the back-end. If the back-end instead uses `Content-Length`, it will be expecting the number of bytes declared in `Content-Length` and may wait for more data. This mismatch often causes the back-end to hang or time out while the front-end has already finished — the timing difference is the signal that the back-end is using Content-Length framing.
 
+![alt text](image-3.png)
 
 after we have t end the chunked with 
 To solve the lab https://portswigger.net/web-security/request-smuggling/lab-basic-te-cl
